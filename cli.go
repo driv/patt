@@ -13,7 +13,7 @@ func RunCLI(patternString, inputFile, outputFile string) error {
 	if inputFile == "" {
 		input = os.Stdin
 	} else {
-		input, err = os.Open(inputFile)
+		input, err = os.OpenFile(inputFile,os.O_RDONLY,0)
 		if err != nil {
 			return fmt.Errorf("error opening input file: %v", err)
 		}
@@ -24,12 +24,12 @@ func RunCLI(patternString, inputFile, outputFile string) error {
 	if outputFile == "" {
 		output = os.Stdout
 	} else {
-		output, err = os.Create(outputFile)
+		output, err = os.OpenFile(outputFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE,0600)
 		if err != nil {
 			return fmt.Errorf("error creating output file: %v", err)
 		}
-		defer output.Close()
 	}
+	defer output.Close()
 
 	return RunCLIWithIO(patternString, input, output)
 }
