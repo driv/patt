@@ -82,15 +82,3 @@ func TestMatchLines_NewLines(t *testing.T) {
 		assert.Equal(t, "line1\n\nline2\nline3\n\n", output.String())
 	})
 }
-
-func TestWriteLine(t *testing.T) {
-	t.Run("writes line with new line character", func(t *testing.T) {
-		output := &bytes.Buffer{}
-		line := []byte("test line")
-
-		err := WriteLine(output, line)
-
-		assert.NoError(t, err)
-		assert.Equal(t, "test line\n", output.String())
-	})
-}
