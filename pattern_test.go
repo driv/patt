@@ -2,6 +2,8 @@ package patt_test
 
 import (
 	"bytes"
+	"io"
+	"os"
 	"patt"
 	"regexp"
 	"strings"
@@ -126,6 +128,17 @@ something  twicePattern`)
 something  twicePattern
 `, writer.String())
 	})
+	t.Run("parentheses and stuff", func(t *testing.T) {
+		matcher := makeMatcher(t, "[<_>] [error] <_>")
+		reader := strings.NewReader(`[01:01:01] [error] some error message`)
+		var writer bytes.Buffer
+		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
+
+		assert.True(t, matched, "MatchLines() should return true")
+		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
+		assert.Equal(t, `[01:01:01] [error] some error message
+`, writer.String())
+	})
 }
 
 func assertNoMatch(t *testing.T, err error, matched bool, writer bytes.Buffer) {
@@ -173,4 +186,69 @@ someone once
 			}
 		}
 	})
+}
+
+func BenchmarkParseLargeFile(b *testing.B) {
+	lines := strings.Repeat(`something once
+something twice
+something thrice
+not matching once
+someone once
+`, 10)
+	fileSize := 500 * 1024 * 1024 // 500 MB
+	times := fileSize / len(lines)
+	var builder strings.Builder
+	for i := 0; i < times; i++ {
+		builder.WriteString(lines)
+	}
+	fileContent := builder.String()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		reader := strings.NewReader(fileContent)
+		var writer bytes.Buffer
+		matcher := makeMatcher(b, "something <_>")
+		_, err := patt.PrintMatchingLines(matcher, reader, &writer)
+		if err != nil {
+			b.Fatalf("error during matching: %v", err)
+		}
+	}
+}
+
+func TestParseApacheLogFile(t *testing.T) {
+	filePath := "test_files/Apache_2k.log"
+
+	input, err := os.OpenFile(filePath, os.O_RDONLY, 0)
+	if err != nil {
+		t.Fatalf("failed to read file: %v", err)
+	}
+	var writer bytes.Buffer
+	matcher := makeMatcher(t, "[<_>] [error] <_>")
+	match, err := patt.PrintMatchingLines(matcher, input, &writer)
+	if err != nil {
+		t.Fatalf("error during matching: %v", err)
+	}
+	if !match {
+		t.Errorf("no match")
+	}
+}
+
+func BenchmarkParseApacheLogFileHuge(b *testing.B) {
+	filePath := "test_files/Apache_500MB.log"
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		input, err := os.OpenFile(filePath, os.O_RDONLY, 0)
+		if err != nil {
+			b.Fatalf("failed to read file: %v", err)
+		}
+		matcher := makeMatcher(b, "[<_>] [error] <_>")
+		match, err := patt.PrintMatchingLines(matcher, input, io.Discard)
+		if err != nil {
+			b.Fatalf("error during matching: %v", err)
+		}
+		if match != true {
+			b.Fatalf("no match")
+		}
+	}
 }
