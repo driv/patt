@@ -27,7 +27,7 @@ func TestMatchLines_LongLines(t *testing.T) {
 			},
 		}
 
-		matched, err := MatchLines(matcher, input, output)
+		matched, err := PrintMatchingLines(matcher, input, output)
 
 		assert.NoError(t, err)
 		assert.True(t, matched)
@@ -45,7 +45,7 @@ func TestMatchLines_NewLines(t *testing.T) {
 			},
 		}
 
-		matched, err := MatchLines(matcher, input, output)
+		matched, err := PrintMatchingLines(matcher, input, output)
 
 		assert.NoError(t, err)
 		assert.True(t, matched)
@@ -60,7 +60,7 @@ func TestMatchLines_NewLines(t *testing.T) {
 			},
 		}
 
-		matched, err := MatchLines(matcher, input, output)
+		matched, err := PrintMatchingLines(matcher, input, output)
 
 		assert.NoError(t, err)
 		assert.True(t, matched)
@@ -75,7 +75,7 @@ func TestMatchLines_NewLines(t *testing.T) {
 			},
 		}
 
-		matched, err := MatchLines(matcher, input, output)
+		matched, err := PrintMatchingLines(matcher, input, output)
 
 		assert.NoError(t, err)
 		assert.True(t, matched)

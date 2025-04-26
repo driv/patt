@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func MatchLines(filter LinesMatcher, reader io.Reader, writer io.Writer) (bool, error) {
+func PrintMatchingLines(filter LinesMatcher, reader io.Reader, writer io.Writer) (bool, error) {
 
 	scanner := bufio.NewScanner(reader)
 	bufferedWriter := bufio.NewWriter(writer)

@@ -2,8 +2,7 @@ package patt_test
 
 import (
 	"bytes"
-	filter_lines "pattern"
-	patt "pattern"
+	"patt"
 	"regexp"
 	"strings"
 	"testing"
@@ -50,7 +49,7 @@ func TestMatchesMultiple(t *testing.T) {
 		reader := strings.NewReader("")
 		var writer bytes.Buffer
 
-		matched, err := filter_lines.MatchLines(matcher, reader, &writer)
+		matched, err := patt.PrintMatchingLines(matcher, reader, &writer)
 
 		assertNoMatch(t, err, matched, writer)
 	})
@@ -59,7 +58,7 @@ func TestMatchesMultiple(t *testing.T) {
 		reader := strings.NewReader("wrong stringPattern")
 		var writer bytes.Buffer
 
-		matched, err := filter_lines.MatchLines(matcher, reader, &writer)
+		matched, err := patt.PrintMatchingLines(matcher, reader, &writer)
 
 		assert.NoError(t, err, "MatchLines() should not return error")
 		assert.False(t, matched, "MatchLines() should return false")
@@ -70,7 +69,7 @@ func TestMatchesMultiple(t *testing.T) {
 		reader := strings.NewReader("something stringPattern")
 		var writer bytes.Buffer
 
-		matched, _ := filter_lines.MatchLines(matcher, reader, &writer)
+		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
 
 		assert.True(t, matched, "MatchLines() should return true")
 		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
@@ -82,7 +81,7 @@ func TestMatchesMultiple(t *testing.T) {
 		reader := strings.NewReader("wrong stringPattern\nsomething stringPattern")
 		var writer bytes.Buffer
 
-		matched, _ := filter_lines.MatchLines(matcher, reader, &writer)
+		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
 
 		assert.True(t, matched, "MatchLines() should return true")
 		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
@@ -95,7 +94,7 @@ func TestMatchesMultiple(t *testing.T) {
 non-matching stringPattern`)
 		var writer bytes.Buffer
 
-		matched, _ := filter_lines.MatchLines(matcher, reader, &writer)
+		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
 
 		assert.False(t, matched, "MatchLines()")
 		assert.Empty(t, writer.Bytes(), "MatchLines() should not have written to writer")
@@ -106,7 +105,7 @@ non-matching stringPattern`)
 something twicePattern`)
 		var writer bytes.Buffer
 
-		matched, _ := filter_lines.MatchLines(matcher, reader, &writer)
+		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
 
 		assert.True(t, matched, "MatchLines() should return true")
 		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
@@ -119,7 +118,7 @@ something twicePattern
 		reader := strings.NewReader(`something  oncePattern
 something  twicePattern`)
 		var writer bytes.Buffer
-		matched, _ := filter_lines.MatchLines(matcher, reader, &writer)
+		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
 
 		assert.True(t, matched, "MatchLines() should return true")
 		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
@@ -149,26 +148,26 @@ something thrice
 not matching once
 someone once
 `, 10)
+	filter := makeMatcher(b, "somet<_> <_>")
 	b.Run("pattern matcher", func(b *testing.B) {
-		patt := makeMatcher(b, "somet<_> <_>")
 
 		for i := 0; i < b.N; i++ {
 			reader := strings.NewReader(readerContent)
 			var writer bytes.Buffer
-			_, err := filter_lines.MatchLines(patt, reader, &writer)
+			_, err := patt.PrintMatchingLines(filter, reader, &writer)
 			if err != nil {
 				return
 			}
 		}
 	})
 
+	regex := `somet.+ .+`
+	re := regexp.MustCompile(regex)
 	b.Run("regex matcher", func(b *testing.B) {
-		regex := `somet.+ .+`
-		re := regexp.MustCompile(regex)
 		for i := 0; i < b.N; i++ {
 			reader := strings.NewReader(readerContent)
 			var writer bytes.Buffer
-			_, err := filter_lines.MatchLines(re, reader, &writer)
+			_, err := patt.PrintMatchingLines(re, reader, &writer)
 			if err != nil {
 				return
 			}

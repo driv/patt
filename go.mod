@@ -1,4 +1,4 @@
-module pattern
+module patt
 
 go 1.23.0
 
