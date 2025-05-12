@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 type mockMatcher struct {
@@ -20,179 +18,141 @@ func (m mockMatcher) Match(b []byte) bool {
 	return m.matchFunc(b)
 }
 
-func TestMatchLines_LongLines(t *testing.T) {
-	t.Run("handles long lines", func(t *testing.T) {
-		longLine := strings.Repeat("a", 10000) + "\n"
-		input := bytes.NewReader([]byte(longLine))
-		output := &bytes.Buffer{}
-		matcher := mockMatcher{
-			matchFunc: func(b []byte) bool {
-				return true
-			},
-		}
+func TestPrintMultiline(t *testing.T) {
+	matcher := mockMatcher{
+		matchFunc: func(b []byte) bool { return true },
+	}
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "handles long lines",
+			input:    strings.Repeat("a", 10000) + "\n",
+			expected: strings.Repeat("a", 10000) + "\n",
+		},
+		{
+			name:     "handles new lines correctly",
+			input:    "line1\nline2\nline3\n",
+			expected: "line1\nline2\nline3\n",
+		},
+		{
+			name:     "handles missing new line EOF",
+			input:    "line1\nline2\nline3",
+			expected: "line1\nline2\nline3\n",
+		},
+		{
+			name:     "handles empty lines",
+			input:    "line1\n\nline2\nline3\n\n",
+			expected: "line1\n\nline2\nline3\n\n",
+		},
+	}
 
-		matched, err := patt.PrintMatchingLines(matcher, input, output)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			input := bytes.NewReader([]byte(tt.input))
+			output := &bytes.Buffer{}
 
-		assert.NoError(t, err)
-		assert.True(t, matched)
-		assert.Equal(t, longLine, output.String())
-	})
+			matched, err := patt.PrintMatchingLines(matcher, input, output)
+
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if !matched {
+				t.Errorf("expected match but got no match")
+			}
+			if output.String() != tt.expected {
+				t.Errorf("expected output %q but got %q", tt.expected, output.String())
+			}
+		})
+	}
 }
 
-func TestMatchLines_NewLines(t *testing.T) {
-	t.Run("handles new lines correctly", func(t *testing.T) {
-		input := bytes.NewReader([]byte("line1\nline2\nline3\n"))
-		output := &bytes.Buffer{}
-		matcher := mockMatcher{
-			matchFunc: func(b []byte) bool {
-				return true
-			},
-		}
+func TestPrintMatchingLines(t *testing.T) {
+	tests := []struct {
+		name     string
+		pattern  string
+		input    string
+		expected string
+	}{
+		{
+			name:     "no lines, no match",
+			pattern:  "<_>",
+			input:    "",
+			expected: "",
+		},
+		{
+			name:     "one line, no match",
+			pattern:  "something <_>",
+			input:    "wrong stringPattern",
+			expected: "",
+		},
+		{
+			name:     "one line, 1 match",
+			pattern:  "something <_>",
+			input:    "something stringPattern",
+			expected: "something stringPattern\n",
+		},
+		{
+			name:     "2 lines, 1 match",
+			pattern:  "something <_>",
+			input:    "wrong stringPattern\nsomething stringPattern",
+			expected: "something stringPattern\n",
+		},
+		{
+			name:     "2 lines, no match",
+			pattern:  "something <_>",
+			input:    "wrong stringPattern\nnon-matching stringPattern",
+			expected: "",
+		},
+		{
+			name:     "2 lines, 2 matches",
+			pattern:  "something <_>Pattern",
+			input:    "something oncePattern\nsomething twicePattern",
+			expected: "something oncePattern\nsomething twicePattern\n",
+		},
+		{
+			name:     "spaces are not special",
+			pattern:  "something <_>Pattern",
+			input:    "something  oncePattern\nsomething  twicePattern",
+			expected: "something  oncePattern\nsomething  twicePattern\n",
+		},
+		{
+			name:     "parentheses and stuff",
+			pattern:  "[<_>] [error] <_>",
+			input:    "[01:01:01] [error] some error message",
+			expected: "[01:01:01] [error] some error message\n",
+		},
+	}
 
-		matched, err := patt.PrintMatchingLines(matcher, input, output)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			matcher := makeMatcher(t, tt.pattern)
+			reader := strings.NewReader(tt.input)
+			var writer bytes.Buffer
 
-		assert.NoError(t, err)
-		assert.True(t, matched)
-		assert.Equal(t, "line1\nline2\nline3\n", output.String())
-	})
-	t.Run("handles missing new line EOF", func(t *testing.T) {
-		input := bytes.NewReader([]byte("line1\nline2\nline3"))
-		output := &bytes.Buffer{}
-		matcher := mockMatcher{
-			matchFunc: func(b []byte) bool {
-				return true
-			},
-		}
+			matched, err := patt.PrintMatchingLines(matcher, reader, &writer)
 
-		matched, err := patt.PrintMatchingLines(matcher, input, output)
-
-		assert.NoError(t, err)
-		assert.True(t, matched)
-		assert.Equal(t, "line1\nline2\nline3\n", output.String())
-	})
-	t.Run("handles empty lines", func(t *testing.T) {
-		input := bytes.NewReader([]byte("line1\n\nline2\nline3\n\n"))
-		output := &bytes.Buffer{}
-		matcher := mockMatcher{
-			matchFunc: func(b []byte) bool {
-				return true
-			},
-		}
-
-		matched, err := patt.PrintMatchingLines(matcher, input, output)
-
-		assert.NoError(t, err)
-		assert.True(t, matched)
-		assert.Equal(t, "line1\n\nline2\nline3\n\n", output.String())
-	})
-}
-
-func TestMatchesMultiple(t *testing.T) {
-	t.Run("no lines, no match", func(t *testing.T) {
-		matcher := makeMatcher(t, "<_>")
-		reader := strings.NewReader("")
-		var writer bytes.Buffer
-
-		matched, err := patt.PrintMatchingLines(matcher, reader, &writer)
-
-		assertNoMatch(t, err, matched, writer)
-	})
-	t.Run("one line, no match", func(t *testing.T) {
-		matcher := makeMatcher(t, "something <_>")
-		reader := strings.NewReader("wrong stringPattern")
-		var writer bytes.Buffer
-
-		matched, err := patt.PrintMatchingLines(matcher, reader, &writer)
-
-		assert.NoError(t, err, "MatchLines() should not return error")
-		assert.False(t, matched, "MatchLines() should return false")
-		assert.Empty(t, writer.Bytes(), "MatchLines() should not write")
-	})
-	t.Run("one line, 1 match", func(t *testing.T) {
-		matcher := makeMatcher(t, "something <_>")
-		reader := strings.NewReader("something stringPattern")
-		var writer bytes.Buffer
-
-		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
-
-		assert.True(t, matched, "MatchLines() should return true")
-		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
-		assert.Equal(t, `something stringPattern
-`, writer.String())
-	})
-	t.Run("2 lines, 1 match", func(t *testing.T) {
-		matcher := makeMatcher(t, "something <_>")
-		reader := strings.NewReader("wrong stringPattern\nsomething stringPattern")
-		var writer bytes.Buffer
-
-		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
-
-		assert.True(t, matched, "MatchLines() should return true")
-		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
-		assert.Equal(t, `something stringPattern
-`, writer.String())
-	})
-	t.Run("2 lines, no match", func(t *testing.T) {
-		matcher := makeMatcher(t, "something <_>")
-		reader := strings.NewReader(`wrong stringPattern
-non-matching stringPattern`)
-		var writer bytes.Buffer
-
-		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
-
-		assert.False(t, matched, "MatchLines()")
-		assert.Empty(t, writer.Bytes(), "MatchLines() should not have written to writer")
-	})
-	t.Run("2 lines, 2 matches", func(t *testing.T) {
-		matcher := makeMatcher(t, "something <_>Pattern")
-		reader := strings.NewReader(`something oncePattern
-something twicePattern`)
-		var writer bytes.Buffer
-
-		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
-
-		assert.True(t, matched, "MatchLines() should return true")
-		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
-		assert.Equal(t, `something oncePattern
-something twicePattern
-`, writer.String())
-	})
-	t.Run("spaces are not special", func(t *testing.T) {
-		matcher := makeMatcher(t, "something <_>Pattern")
-		reader := strings.NewReader(`something  oncePattern
-something  twicePattern`)
-		var writer bytes.Buffer
-		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
-
-		assert.True(t, matched, "MatchLines() should return true")
-		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
-		assert.Equal(t, `something  oncePattern
-something  twicePattern
-`, writer.String())
-	})
-	t.Run("parentheses and stuff", func(t *testing.T) {
-		matcher := makeMatcher(t, "[<_>] [error] <_>")
-		reader := strings.NewReader(`[01:01:01] [error] some error message`)
-		var writer bytes.Buffer
-		matched, _ := patt.PrintMatchingLines(matcher, reader, &writer)
-
-		assert.True(t, matched, "MatchLines() should return true")
-		assert.NotEmpty(t, writer.Bytes(), "MatchLines() should have written to writer")
-		assert.Equal(t, `[01:01:01] [error] some error message
-`, writer.String())
-	})
-}
-
-func assertNoMatch(t *testing.T, err error, matched bool, writer bytes.Buffer) {
-	assert.NoError(t, err, "MatchLines() should not return error")
-	assert.False(t, matched, "MatchLines() should return false")
-	assert.Empty(t, writer.Bytes(), "MatchLines() should not write")
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+			if matched != (tt.expected != "") {
+				t.Errorf("expected match: %v, but got: %v", tt.expected != "", matched)
+			}
+			if writer.String() != tt.expected {
+				t.Errorf("expected output %q but got %q", tt.expected, writer.String())
+			}
+		})
+	}
 }
 
 func makeMatcher(t testing.TB, stringPattern string) patt.LinesMatcher {
 	t.Helper()
 	matcher, err := patt.NewMatcher(stringPattern)
-	assert.NoError(t, err, "NewMatcher() should not return an error")
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
 	return matcher
 }
 
@@ -206,7 +166,7 @@ someone once
 	filter := makeMatcher(b, "somet<_> <_>")
 	b.Run("pattern matcher", func(b *testing.B) {
 
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			reader := strings.NewReader(readerContent)
 			var writer bytes.Buffer
 			_, err := patt.PrintMatchingLines(filter, reader, &writer)
@@ -219,7 +179,7 @@ someone once
 	regex := `somet.+ .+`
 	re := regexp.MustCompile(regex)
 	b.Run("regex matcher", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			reader := strings.NewReader(readerContent)
 			var writer bytes.Buffer
 			_, err := patt.PrintMatchingLines(re, reader, &writer)

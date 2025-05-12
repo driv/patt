@@ -12,13 +12,23 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 	}{
 		{
 			name: "valid arguments",
-			args: []string{"program", "pattern", "input.txt"},
+			args: []string{"pattern", "" ,"input.txt"},
 			want: &CLIParams{PatternString: "pattern", InputFile: "input.txt"},
 		},
 		{
 			name: "missing input file",
-			args: []string{"program", "pattern"},
+			args: []string{"pattern"},
 			want: &CLIParams{PatternString: "pattern"},
+		},
+		{
+			name: "with input file and replacement",
+			args: []string{"pattern", "replacement", "input.txt"},
+			want: &CLIParams{PatternString: "pattern", InputFile: "input.txt", ReplacementString: "replacement"},
+		},
+		{
+			name: "missing input file with replacement",
+			args: []string{"pattern", "replacement"},
+			want: &CLIParams{PatternString: "pattern", ReplacementString: "replacement"},
 		},
 	}
 
@@ -27,7 +37,6 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 			got, err := ParseCLIParams(tt.args)
 			if err != nil {
 				t.Errorf("ParseCLIParams() error = %v, want no error", err)
-				return
 			}
 			if got != nil && *got != *tt.want {
 				t.Errorf("ParseCLIParams() = %v, want %v", got, tt.want)
@@ -44,7 +53,7 @@ func TestParseCLIParams_WithErrors(t *testing.T) {
 	}{
 		{
 			name:    "not enough arguments",
-			args:    []string{"program"},
+			args:    []string{},
 			wantErr: true,
 		},
 	}
@@ -53,7 +62,7 @@ func TestParseCLIParams_WithErrors(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := ParseCLIParams(tt.args)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ParseCLIParams() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ParseCLIParams(%v) should fail", tt.args)
 			}
 		})
 	}
