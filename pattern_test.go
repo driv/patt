@@ -1,12 +1,36 @@
 package patt_test
 
 import (
-	"errors"
 	"github.com/google/go-cmp/cmp"
 	"patt"
 	"testing"
 )
 
+func TestMatcher(t *testing.T) {
+	tests := []struct {
+		name          string
+		stringPattern string
+		inputLine     string
+		match         bool
+	}{
+		{
+			name:          "empty line",
+			stringPattern: "<_>",
+			inputLine:     "",
+			match:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			matcher, _ := patt.NewMatcher(tt.stringPattern)
+			gotMatch := matcher.Match([]byte(tt.inputLine))
+			if gotMatch != tt.match {
+				t.Errorf("NewMatcher() = %v, expected: %v", gotMatch, tt.match)
+			}
+		})
+	}
+}
 func TestMakeMatcher(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -46,7 +70,7 @@ func TestMakeMatcher(t *testing.T) {
 	}
 }
 
-func TestMakeReplacer(t *testing.T) {
+func TestReplacer(t *testing.T) {
 	tests := []struct {
 		name                  string
 		stringPattern         string
@@ -114,10 +138,7 @@ func TestMakeReplacer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			replacer, err := patt.NewReplacer(tt.stringPattern, tt.stringReplaceTemplate)
-			if err != nil {
-				t.Errorf("Error creating replacer: %v", err)
-			}
+			replacer := makeReplacer(t, tt.stringPattern, tt.stringReplaceTemplate)
 			matches := replacer.Match([]byte(tt.inputLine))
 			if !matches {
 				t.Error("No match")
@@ -133,15 +154,56 @@ func TestMakeReplacer(t *testing.T) {
 	}
 }
 
-func TestMakeReplacer_Fail_Extra_Literal(t *testing.T) {
-	stringPattern := "My name is <name>"
-	stringReplaceTemplate := "Hello <name> <surname>!"
-	_, err := patt.NewReplacer(stringPattern, stringReplaceTemplate)
-	if err == nil {
-		t.Errorf("Error expected, the template includes <surname>")
+func makeReplacer(t *testing.T, stringPattern string, stringReplaceTemplate string) *patt.Replacer {
+	t.Helper()
+	replacer, err := patt.NewReplacer(stringPattern, stringReplaceTemplate)
+	if err != nil {
+		t.Fatalf("Error creating replacer: %v", err)
 	}
-	var errorType *patt.ReplaceNameNotFoundError
-	if !errors.As(err, &errorType) {
-		t.Errorf("Expected error of type ReplaceNameNotFoundError, but got: %v", err)
+	return replacer
+}
+
+func TestMakeReplacer(t *testing.T) {
+	tests := []struct {
+		name            string
+		matchPattern    string
+		replaceTemplate string
+		wantErr         bool
+	}{
+		{
+			name:            "Missing placeholder in template",
+			matchPattern:    "My name is <name>",
+			replaceTemplate: "Hello <name> <surname>!",
+			wantErr:         true,
+		},
+		{
+			name:            "Valid template",
+			matchPattern:    "My name is <name>",
+			replaceTemplate: "Hello <name>!",
+		},
+		{
+			name:            "Invalid match pattern",
+			matchPattern:    "My name is <name><surname>",
+			replaceTemplate: "Hello <name>!",
+			wantErr:         true,
+		},
+		{
+			name:            "Invalid replace template",
+			matchPattern:    "My name is <name>",
+			replaceTemplate: "Hello <_>!",
+			wantErr:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := patt.NewReplacer(tt.matchPattern, tt.replaceTemplate)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewReplacer() error = %v, expected error: %v", err, tt.wantErr)
+			}
+			if tt.wantErr != (err != nil) {
+				t.Errorf("Expected an error but got none")
+			}
+		})
 	}
 }

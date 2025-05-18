@@ -10,18 +10,8 @@ import (
 	"testing"
 )
 
-type mockMatcher struct {
-	matchFunc func([]byte) bool
-}
-
-func (m mockMatcher) Match(b []byte) bool {
-	return m.matchFunc(b)
-}
-
 func TestPrintMultiline(t *testing.T) {
-	matcher := mockMatcher{
-		matchFunc: func(b []byte) bool { return true },
-	}
+	matcher, _ := patt.NewMatcher("<_>")
 	tests := []struct {
 		name     string
 		input    string
@@ -45,7 +35,7 @@ func TestPrintMultiline(t *testing.T) {
 		{
 			name:     "handles empty lines",
 			input:    "line1\n\nline2\nline3\n\n",
-			expected: "line1\n\nline2\nline3\n\n",
+			expected: "line1\nline2\nline3\n",
 		},
 	}
 
@@ -75,30 +65,31 @@ func TestPrintMatchingLines(t *testing.T) {
 		pattern  string
 		input    string
 		expected string
+		match  bool
 	}{
 		{
-			name:     "no lines, no match",
-			pattern:  "<_>",
-			input:    "",
-			expected: "",
+			name:    "no lines, no match",
+			pattern: "<_>",
+			input:   "",
 		},
 		{
-			name:     "one line, no match",
-			pattern:  "something <_>",
-			input:    "wrong stringPattern",
-			expected: "",
+			name:    "one line, no match",
+			pattern: "something <_>",
+			input:   "wrong stringPattern",
 		},
 		{
 			name:     "one line, 1 match",
 			pattern:  "something <_>",
 			input:    "something stringPattern",
 			expected: "something stringPattern\n",
+			match: true,
 		},
 		{
 			name:     "2 lines, 1 match",
 			pattern:  "something <_>",
 			input:    "wrong stringPattern\nsomething stringPattern",
 			expected: "something stringPattern\n",
+			match: true,
 		},
 		{
 			name:     "2 lines, no match",
@@ -111,18 +102,21 @@ func TestPrintMatchingLines(t *testing.T) {
 			pattern:  "something <_>Pattern",
 			input:    "something oncePattern\nsomething twicePattern",
 			expected: "something oncePattern\nsomething twicePattern\n",
+			match: true,
 		},
 		{
 			name:     "spaces are not special",
 			pattern:  "something <_>Pattern",
 			input:    "something  oncePattern\nsomething  twicePattern",
 			expected: "something  oncePattern\nsomething  twicePattern\n",
+			match: true,
 		},
 		{
 			name:     "parentheses and stuff",
 			pattern:  "[<_>] [error] <_>",
 			input:    "[01:01:01] [error] some error message",
 			expected: "[01:01:01] [error] some error message\n",
+			match: true,
 		},
 	}
 
@@ -137,8 +131,8 @@ func TestPrintMatchingLines(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			if matched != (tt.expected != "") {
-				t.Errorf("expected match: %v, but got: %v", tt.expected != "", matched)
+			if tt.match != matched {
+				t.Errorf("Expected match to be %v but got %v", tt.match, matched)
 			}
 			if writer.String() != tt.expected {
 				t.Errorf("expected output %q but got %q", tt.expected, writer.String())
