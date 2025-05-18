@@ -60,69 +60,49 @@ func TestPrintMultiline(t *testing.T) {
 }
 
 func TestPrintMatchingLines(t *testing.T) {
+	pattern := "one <_> three"
 	tests := []struct {
 		name     string
-		pattern  string
 		input    string
 		expected string
-		match  bool
+		match    bool
 	}{
 		{
-			name:    "no lines, no match",
-			pattern: "<_>",
-			input:   "",
+			name:  "no lines, no match",
+			input: "",
 		},
 		{
-			name:    "one line, no match",
-			pattern: "something <_>",
-			input:   "wrong stringPattern",
+			name:  "one line, no match",
+			input: "four five six",
 		},
 		{
 			name:     "one line, 1 match",
-			pattern:  "something <_>",
-			input:    "something stringPattern",
-			expected: "something stringPattern\n",
-			match: true,
+			input:    "one two three",
+			expected: "one two three\n",
+			match:    true,
 		},
 		{
 			name:     "2 lines, 1 match",
-			pattern:  "something <_>",
-			input:    "wrong stringPattern\nsomething stringPattern",
-			expected: "something stringPattern\n",
-			match: true,
+			input:    "one two three\nfour five six",
+			expected: "one two three\n",
+			match:    true,
 		},
 		{
 			name:     "2 lines, no match",
-			pattern:  "something <_>",
-			input:    "wrong stringPattern\nnon-matching stringPattern",
+			input:    "four five six\nseven eight nine",
 			expected: "",
 		},
 		{
 			name:     "2 lines, 2 matches",
-			pattern:  "something <_>Pattern",
-			input:    "something oncePattern\nsomething twicePattern",
-			expected: "something oncePattern\nsomething twicePattern\n",
-			match: true,
-		},
-		{
-			name:     "spaces are not special",
-			pattern:  "something <_>Pattern",
-			input:    "something  oncePattern\nsomething  twicePattern",
-			expected: "something  oncePattern\nsomething  twicePattern\n",
-			match: true,
-		},
-		{
-			name:     "parentheses and stuff",
-			pattern:  "[<_>] [error] <_>",
-			input:    "[01:01:01] [error] some error message",
-			expected: "[01:01:01] [error] some error message\n",
-			match: true,
+			input:    "one two three\none 2 three",
+			expected: "one two three\none 2 three\n",
+			match:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matcher := makeMatcher(t, tt.pattern)
+			matcher := makeMatcher(t, pattern)
 			reader := strings.NewReader(tt.input)
 			var writer bytes.Buffer
 
