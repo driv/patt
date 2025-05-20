@@ -134,6 +134,13 @@ func TestReplacer(t *testing.T) {
 			stringReplaceTemplate: "Your username is: <name><surname>",
 			expectedResult:        "Your username is: FedericoNafria",
 		},
+		{
+			name:                  "Whitespaces",
+			stringPattern:         "    <number> <day>",
+			inputLine:             "    284 Mon",
+			stringReplaceTemplate: "There were <number> errors on <day>",
+			expectedResult:        "There were 284 errors on Mon",
+		},
 	}
 
 	for _, tt := range tests {

@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-func ReplaceLines(filter Replacer, reader io.Reader, writer io.Writer) (bool, error) {
+func ReplaceLines(filter LineReplacer, reader io.Reader, writer io.Writer) (bool, error) {
 	scanner := bufio.NewScanner(reader)
 	bufferedWriter := bufio.NewWriter(writer)
 	defer bufferedWriter.Flush()
@@ -13,11 +13,16 @@ func ReplaceLines(filter Replacer, reader io.Reader, writer io.Writer) (bool, er
 	match := false
 	for scanner.Scan() {
 		line := scanner.Bytes()
-		if filter.Match(line) {
-			match = true
-			bufferedWriter.Write(line)
-			bufferedWriter.WriteByte('\n')
+		if !filter.Match(line) {
+			continue
 		}
+		line, err := filter.Replace(line)
+		if err != nil {
+			return false, err
+		}
+		match = true
+		bufferedWriter.Write(line)
+		bufferedWriter.WriteByte('\n')
 	}
 
 	if err := scanner.Err(); err != nil {

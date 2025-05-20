@@ -74,6 +74,10 @@ func capturesPositions(sourceNames []string, replaceNames []string, literals [][
 	return positions, nil
 }
 
+type LineReplacer interface {
+	LinesMatcher
+	Replace(b []byte) ([]byte, error)
+}
 type Replacer struct {
 	*PatternMatcher
 	literals  [][]byte

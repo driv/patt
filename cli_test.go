@@ -56,6 +56,27 @@ func TestRunCLI(t *testing.T) {
 			expectErr: true,
 			expectOut: "",
 		},
+		{
+			name:      "valid replacement with match",
+			args:      []string{"patt", "something <placeholder>", "found <placeholder>!"},
+			stdin:     "something match\n",
+			expectErr: false,
+			expectOut: "found match!\n",
+		},
+		{
+			name:      "valid replacement with no match",
+			args:      []string{"patt", "something <placeholder>", "found <placeholder>!"},
+			stdin:     "other match\n",
+			expectErr:	true,
+			expectOut: "",
+		},
+		{
+			name:      "invalid replacement",
+			args:      []string{"patt", "something <placeholder>", "found <wrong>!"},
+			stdin:     "",
+			expectErr: true,
+			expectOut: "",
+		},
 	}
 
 	for _, tt := range tests {
