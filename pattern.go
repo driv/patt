@@ -3,7 +3,7 @@ package patt
 import (
 	"fmt"
 
-	"github.com/grafana/loki/v3/pkg/logql/log/pattern"
+	"patt/pattern"
 )
 
 type ReplaceNameNotFoundError struct {
