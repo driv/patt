@@ -28,14 +28,14 @@ A fast CLI tool for log pattern matching and replacement, inspired by [Grafana L
 
 ```sh
 ./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log
-Day: Jan
-Day: Jan
+Day: Mon
+Day: Mon
 ...
 ```
 
 ### Example: Piping and Aggregation
 
-Count errors per day in a huge log file:
+Count errors per day in an Apache log file:
 
 ```sh
 ./patt "[<day> <_>] [error] <_>" "Day: <day>" ./test_files/Apache_2k.log | sort | uniq -c | ./patt " <count> Day: <day>" "There were <count> errors on <day>"
@@ -46,18 +46,23 @@ There were    311 errors on Sun
 ## Benchmark
 
 ```sh
-hyperfine "./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log"     "awk '/[error]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print \"Day: \" m[1] }' ./test_files/Apache_2k.log"
-
+$ hyperfine "./pattern-cli '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log"     "awk '/\[error\]/ { if (match(\$0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print \"Day: \" m[1] }' ./test_files/Apache_2k.log"
+hyperfine "./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log"     "awk '/\[error\]/ { if (match(\$0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print \"Day: \" m[1] }' ./test_files/Apache_2k.log"
 Benchmark 1: ./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log
-  Time (mean ± σ):       4.7 ms ±   2.7 ms    [User: 2.5 ms, System: 3.0 ms]
-  Range (min … max):     0.0 ms …   9.0 ms    324 runs
+  Time (mean ± σ):       6.1 ms ±   0.8 ms    [User: 2.8 ms, System: 4.1 ms]
+  Range (min … max):     5.0 ms …  10.6 ms    279 runs
 
-Benchmark 2: awk '/[error]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print "Day: " m[1] }' ./test_files/Apache_2k.log
-  Time (mean ± σ):      25.2 ms ±   5.6 ms    [User: 21.7 ms, System: 3.4 ms]
-  Range (min … max):     7.5 ms …  50.4 ms    95 runs
+  Warning: Command took less than 5 ms to complete. Results might be inaccurate.
+
+Benchmark 2: awk '/\[error\]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print "Day: " m[1] }' ./test_files/Apache_2k.log
+  Time (mean ± σ):      27.8 ms ±   5.8 ms    [User: 22.8 ms, System: 4.7 ms]
+  Range (min … max):    13.4 ms …  53.8 ms    63 runs
+
+  Warning: Statistical outliers were detected. Consider re-running this benchmark on a quiet PC without any interferences from other programs. It might help to use the '--warmup' or '--prepare' options.
 
 Summary
-  './patt ...' ran 5.33 ± 3.25 times faster than the equivalent awk command.
+  './patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log' ran
+    4.55 ± 1.13 times faster than 'awk '/\[error\]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print "Day: " m[1] }' ./test_files/Apache_2k.log'
 ```
 
 ## Why not just use grep?
@@ -68,7 +73,7 @@ Summary
 ## Installation
 
 ```sh
-go build -o patt ./cmd/cli/main.go
+go build -o patt ./cmd/cli/
 ```
 
 ## License
