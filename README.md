@@ -1,81 +1,76 @@
-# Pattern Matching CLI Tool
+# Patt
 
-## Overview
-
-This repository contains a CLI tool for pattern matching in text files. The tool reads input from a file or standard input, matches lines against a specified pattern, and writes the matching lines to standard output. If no matches are found, an appropriate message is displayed.
+A fast CLI tool for log pattern matching and replacement, inspired by [Grafana Loki's pattern queries](https://grafana.com/docs/loki/latest/query/log_queries/#pattern).
 
 ## Features
 
-- Supports pattern matching using a custom syntax.
-- Reads input from a file or standard input.
-- Outputs matching lines to standard output.
-- Provides clear error messages for invalid patterns or input issues.
+- **Pattern-based log matching** using a syntax similar to Loki's pattern queries.
+- **Powerful replacement**: Extract and reformat log fields with named captures.
+- **Streaming and piping**: Works well in Unix pipelines for further processing.
+- **Performance**: Extremely fast for replacement tasks (see benchmarks below).
 
-## File Structure
+## When to Use
 
-- `cmd/cli/main.go`: Entry point for the CLI tool.
-- `pattern.go`: Contains the core pattern matching logic.
-- `filter_lines.go`: Handles filtering and writing lines based on patterns.
-- `pattern_test.go`: Unit tests for the pattern matching logic.
-- `cli_test.go`: Tests for the CLI tool.
-- `go.mod` and `go.sum`: Go module files.
-
-## Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone <repository-url>
-   cd patt
-   ```
-
-2. Build the CLI tool:
-
-   ```bash
-   go build -o pattern-cli ./cmd/cli
-   ```
+- **Best for**: Extracting and reformatting structured log data using named patterns.
+- **Not ideal for**: Pure search/filtering (use `grep` for that).
 
 ## Usage
 
-Run the CLI tool with the following syntax:
-
-```bash
-./pattern-cli <pattern> [input-file]
+```sh
+./patt '<pattern>' '<replacement>' <input-file>
 ```
 
-- `<pattern>`: The pattern to match lines against.
-- `[input-file]`: (Optional) Path to the input file. If omitted, the tool reads from standard input.
+- `<pattern>`: Loki-style pattern, e.g. `[<day> <_>] [error] <_>`
+- `<replacement>`: Output template using named captures, e.g. `Day: <day>`
+- `<input-file>`: Path to the log file (or use `-` for stdin)
 
-### Examples
+### Example: Extracting Days from Error Logs
 
-1. Match lines containing the word "error" in a file:
-
-   ```bash
-   ./pattern-cli "error" log.txt
-   ```
-
-2. Match lines from standard input:
-
-   ```bash
-   echo -e "line1\nerror line\nline3" | ./pattern-cli "error"
-   ```
-
-## Testing
-
-Run the tests using:
-
-```bash
-go test ./...
+```sh
+./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log
+Day: Jan
+Day: Jan
+...
 ```
 
-## Contributing
+### Example: Piping and Aggregation
 
-Contributions are welcome! Please follow these steps:
+Count errors per day in a huge log file:
 
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Submit a pull request with a clear description of your changes.
+```sh
+./patt "[<day> <_>] [error] <_>" "Day: <day>" ./test_files/Apache_2k.log | sort | uniq -c | ./patt " <count> Day: <day>" "There were <count> errors on <day>"
+There were    284 errors on Mon
+There were    311 errors on Sun
+```
+
+## Benchmark
+
+```sh
+hyperfine "./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log"     "awk '/[error]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print \"Day: \" m[1] }' ./test_files/Apache_2k.log"
+
+Benchmark 1: ./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log
+  Time (mean ± σ):       4.7 ms ±   2.7 ms    [User: 2.5 ms, System: 3.0 ms]
+  Range (min … max):     0.0 ms …   9.0 ms    324 runs
+
+Benchmark 2: awk '/[error]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print "Day: " m[1] }' ./test_files/Apache_2k.log
+  Time (mean ± σ):      25.2 ms ±   5.6 ms    [User: 21.7 ms, System: 3.4 ms]
+  Range (min … max):     7.5 ms …  50.4 ms    95 runs
+
+Summary
+  './patt ...' ran 5.33 ± 3.25 times faster than the equivalent awk command.
+```
+
+## Why not just use grep?
+
+- For simple searching, `grep` is faster and more flexible.
+- For extracting and reformatting structured data, `patt` is much more convenient and often faster than `awk` or custom scripts.
+
+## Installation
+
+```sh
+go build -o patt ./cmd/cli/main.go
+```
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is based on code from Grafana Loki, which is licensed under the GNU Affero General Public License v3 (AGPLv3). See the LICENSE file for details.
