@@ -17,7 +17,7 @@ A fast CLI tool for log pattern matching and replacement, inspired by [Grafana L
 ## Usage
 
 ```sh
-./patt '<pattern>' '<replacement>' <input-file>
+./patt '<pattern>' ['<replacement>'] [<input-file>]
 ```
 
 - `<pattern>`: Loki-style pattern, e.g. `[<day> <_>] [error] <_>`
