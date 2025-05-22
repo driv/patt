@@ -21,8 +21,14 @@ func ReplaceLines(filter LineReplacer, reader io.Reader, writer io.Writer) (bool
 			return false, err
 		}
 		match = true
-		bufferedWriter.Write(line)
-		bufferedWriter.WriteByte('\n')
+		_, err = bufferedWriter.Write(line)
+		if err != nil {
+			return false, err
+		}
+		err = bufferedWriter.WriteByte('\n')
+		if err != nil {
+			return false, err
+		}
 	}
 
 	if err := scanner.Err(); err != nil {

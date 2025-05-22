@@ -1,9 +1,6 @@
 package patt
 
-import (
-	"errors"
-	"flag"
-)
+import "errors"
 
 // CLIParams holds the command-line parameters.
 type CLIParams struct {
@@ -14,18 +11,20 @@ type CLIParams struct {
 
 // Updated ParseCLIParams to handle ReplacementString
 func ParseCLIParams(args []string) (*CLIParams, error) {
-	flags := flag.NewFlagSet("patt", flag.ContinueOnError)
-	flags.Parse(args)
-
-	params := &CLIParams{
-		PatternString:     flags.Arg(0),
-		ReplacementString: flags.Arg(1),
-		InputFile:         flags.Arg(2),
+	v := func(a []string, i int) string {
+		if !(len(a) > i) {
+			return ""
+		}
+		return a[i]
+	}
+	result := &CLIParams{
+		PatternString:     v(args, 0),
+		ReplacementString: v(args, 1),
+		InputFile:         v(args, 2),
 	}
 
-	if params.PatternString == "" {
+	if result.PatternString == "" {
 		return nil, errors.New("patt match_pattern replace_pattern [file]")
 	}
-
-	return params, nil
+	return result, nil
 }

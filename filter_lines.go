@@ -15,8 +15,14 @@ func PrintMatchingLines(filter LinesMatcher, reader io.Reader, writer io.Writer)
 		line := scanner.Bytes()
 		if filter.Match(line) {
 			match = true
-			bufferedWriter.Write(line)
-			bufferedWriter.WriteByte('\n')
+			_, err := bufferedWriter.Write(line)
+			if err != nil {
+				return false, err
+			}
+			err = bufferedWriter.WriteByte('\n')
+			if err != nil {
+				return false, err
+			}
 		}
 	}
 
