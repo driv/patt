@@ -1,33 +1,38 @@
 package main
 
 import (
-	"bufio"
+	"log"
 	"os"
 	"patt"
+	"runtime"
+	"runtime/pprof"
 )
 
 func main() {
-	inputFile := "/tmp/log/syslog"
-	file, err := os.Open(inputFile)
+
+	// CPU profiling
+	f, err := os.Create("cpu.prof")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	defer file.Close()
-	matcher, _ := patt.NewMatcher("<_> pop-os <_>")
+	defer f.Close()
 
-	scanner := bufio.NewScanner(file)
-	var match bool
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		if matcher.Match(line) {
-			match = true
-		}
+	if err := pprof.StartCPUProfile(f); err != nil {
+		log.Fatal(err)
 	}
+	defer pprof.StopCPUProfile()
 
-	if err := scanner.Err(); err != nil {
-		panic(err)
+	args := []string{"patt", "[<_> <_>] [error] <_>", "", "./test_files/Apache_500MB.log"}
+	patt.RunCLI(args, os.Stdin, os.Stdout)
+
+	f, err = os.Create("mem.prof")
+	if err != nil {
+		log.Fatal(err)
 	}
-	if !match {
-		os.Exit(1)
+	defer f.Close()
+
+	runtime.GC() // get up-to-date statistics
+	if err := pprof.WriteHeapProfile(f); err != nil {
+		log.Fatal(err)
 	}
 }

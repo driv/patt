@@ -6,17 +6,15 @@ import (
 )
 
 var (
-	ErrNoCapture         = errors.New("at least one capture is required")
-	ErrCaptureNotAllowed = errors.New("named captures are not allowed")
+	ErrNoCapture                = errors.New("at least one capture is required")
+	ErrCaptureNotAllowed        = errors.New("named captures are not allowed")
 	ErrUnnamedCaptureNotAllowed = errors.New("unnamed captures are not allowed")
-	ErrInvalidExpr       = errors.New("invalid expression")
+	ErrInvalidExpr              = errors.New("invalid expression")
 )
 
 type Matcher struct {
-	e expr
-
-	captures [][]byte
-	names    []string
+	e     expr
+	names []string
 }
 
 func New(in string) (*Matcher, error) {
@@ -28,9 +26,8 @@ func New(in string) (*Matcher, error) {
 		return nil, err
 	}
 	return &Matcher{
-		e:        e,
-		captures: make([][]byte, 0, e.captureCount()),
-		names:    e.captures(),
+		e:     e,
+		names: e.captures(),
 	}, nil
 }
 
@@ -97,7 +94,7 @@ func (m *Matcher) Matches(in []byte) [][]byte {
 	if len(m.e) == 0 {
 		return nil
 	}
-	captures := m.captures[:0]
+	var result [][]byte
 	expr := m.e
 	if ls, ok := expr[0].(literals); ok {
 		i := bytes.Index(in, ls)
@@ -111,34 +108,34 @@ func (m *Matcher) Matches(in []byte) [][]byte {
 		return nil
 	}
 	// from now we have capture - literals - capture ... (literals)?
-	for len(expr) != 0 {
-		if len(expr) == 1 { // we're ending on a capture.
-			if !(expr[0].(capture)).isUnnamed() {
-				captures = append(captures, in)
-			}
-			return captures
-		}
-		capt := expr[0].(capture)
-		ls := expr[1].(literals)
-		expr = expr[2:]
-		i := bytes.Index(in, ls)
-		if i == -1 {
-			// if a capture is missed we return up to the end as the capture.
+	for i := 0; i < len(expr); i += 2 {
+		capt := expr[i].(capture)
+		if i+1 >= len(expr) { // we're ending on a capture.
 			if !capt.isUnnamed() {
-				captures = append(captures, in)
+				result = append(result, in)
 			}
-			return captures
+			return result
+		} else {
+			ls := expr[i+1].(literals)
+			i := bytes.Index(in, ls)
+			if i == -1 {
+				// if a capture is missed we return up to the end as the capture.
+				if !capt.isUnnamed() {
+					result = append(result, in)
+				}
+				return result
+			}
+			if capt.isUnnamed() {
+				in = in[len(ls)+i:]
+				continue
+			}
+			result = append(result, in[:i])
+			in = in[len(ls)+i:]
 		}
 
-		if capt.isUnnamed() {
-			in = in[len(ls)+i:]
-			continue
-		}
-		captures = append(captures, in[:i])
-		in = in[len(ls)+i:]
 	}
 
-	return captures
+	return result
 }
 
 func (m *Matcher) Names() []string {
@@ -151,7 +148,7 @@ func (m *Matcher) Test(in []byte) bool {
 		return len(in) == 0 && len(m.e) == 0
 	}
 	var off int
-	for i := 0; i < len(m.e); i++ {
+	for i := range m.e {
 		lit, ok := m.e[i].(literals)
 		if !ok {
 			continue
