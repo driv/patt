@@ -10,90 +10,82 @@ import (
 	"testing"
 )
 
-func TestPrintMultiline(t *testing.T) {
-	matcher, _ := patt.NewMatcher("<_>")
+func TestPrintMatchingLines_Merged(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "handles long lines",
-			input:    strings.Repeat("a", 10000) + "\n",
-			expected: strings.Repeat("a", 10000) + "\n",
-		},
-		{
-			name:     "handles new lines correctly",
-			input:    "line1\nline2\nline3\n",
-			expected: "line1\nline2\nline3\n",
-		},
-		{
-			name:     "handles missing new line EOF",
-			input:    "line1\nline2\nline3",
-			expected: "line1\nline2\nline3\n",
-		},
-		{
-			name:     "handles empty lines",
-			input:    "line1\n\nline2\nline3\n\n",
-			expected: "line1\nline2\nline3\n",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			input := bytes.NewReader([]byte(tt.input))
-			output := &bytes.Buffer{}
-
-			matched, err := patt.PrintMatchingLines(matcher, input, output)
-
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if !matched {
-				t.Errorf("expected match but got no match")
-			}
-			if output.String() != tt.expected {
-				t.Errorf("expected output %q but got %q", tt.expected, output.String())
-			}
-		})
-	}
-}
-
-func TestPrintMatchingLines(t *testing.T) {
-	pattern := "one <_> three"
-	tests := []struct {
-		name     string
+		pattern  string
 		input    string
 		expected string
 		match    bool
 	}{
+		// From TestPrintMultiline (pattern: <_>)
 		{
-			name:  "no lines, no match",
-			input: "",
+			name:     "handles long lines",
+			pattern:  "<_>",
+			input:    strings.Repeat("a", 10000) + "\n",
+			expected: strings.Repeat("a", 10000) + "\n",
+			match:    true,
 		},
 		{
-			name:  "one line, no match",
-			input: "four five six",
+			name:     "handles new lines correctly",
+			pattern:  "<_>",
+			input:    "line1\nline2\nline3\n",
+			expected: "line1\nline2\nline3\n",
+			match:    true,
+		},
+		{
+			name:     "handles missing new line EOF",
+			pattern:  "<_>",
+			input:    "line1\nline2\nline3",
+			expected: "line1\nline2\nline3\n",
+			match:    true,
+		},
+		{
+			name:     "handles empty lines",
+			pattern:  "<_>",
+			input:    "line1\n\nline2\nline3\n\n",
+			expected: "line1\nline2\nline3\n",
+			match:    true,
+		},
+		// From TestPrintMatchingLines (pattern: one <_> three)
+		{
+			name:     "no lines, no match",
+			pattern:  "one <_> three",
+			input:    "",
+			expected: "",
+			match:    false,
+		},
+		{
+			name:     "one line, no match",
+			pattern:  "one <_> three",
+			input:    "four five six",
+			expected: "",
+			match:    false,
 		},
 		{
 			name:     "one line, 1 match",
+			pattern:  "one <_> three",
 			input:    "one two three",
 			expected: "one two three\n",
 			match:    true,
 		},
 		{
 			name:     "2 lines, 1 match",
+			pattern:  "one <_> three",
 			input:    "one two three\nfour five six",
 			expected: "one two three\n",
 			match:    true,
 		},
 		{
 			name:     "2 lines, no match",
+			pattern:  "one <_> three",
 			input:    "four five six\nseven eight nine",
 			expected: "",
+			match:    false,
 		},
 		{
 			name:     "2 lines, 2 matches",
+			pattern:  "one <_> three",
 			input:    "one two three\none 2 three",
 			expected: "one two three\none 2 three\n",
 			match:    true,
@@ -102,7 +94,7 @@ func TestPrintMatchingLines(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matcher := makeMatcher(t, pattern)
+			matcher := makeMatcher(t, tt.pattern)
 			reader := strings.NewReader(tt.input)
 			var writer bytes.Buffer
 
@@ -177,14 +169,13 @@ someone once
 	for i := 0; i < times; i++ {
 		builder.WriteString(lines)
 	}
-	fileContent := builder.String()
+	writer := io.Discard
+	reader := strings.NewReader(builder.String())
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		reader := strings.NewReader(fileContent)
-		var writer bytes.Buffer
+	for b.Loop() {
+		reader.Seek(0, io.SeekStart)
 		matcher := makeMatcher(b, "something <_>")
-		_, err := patt.PrintMatchingLines(matcher, reader, &writer)
+		_, err := patt.PrintMatchingLines(matcher, reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}
