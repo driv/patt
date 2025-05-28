@@ -202,8 +202,25 @@ func Benchmark_matcher_Matches(b *testing.B) {
 			require.NoError(b, err)
 			b.ResetTimer()
 			l := []byte(tt.in)
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				res = m.Matches(l)
+			}
+		})
+	}
+}
+func Benchmark_matcher_Test(b *testing.B) {
+	for _, tt := range fixtures {
+		b.Run(tt.expr, func(b *testing.B) {
+			b.ReportAllocs()
+			m, err := New(tt.expr)
+			require.NoError(b, err)
+			b.ResetTimer()
+			l := []byte(tt.in)
+			for b.Loop() {
+				r := m.Test(l)
+				if r != tt.matches {
+					b.Error("Wrong match")
+				}
 			}
 		})
 	}

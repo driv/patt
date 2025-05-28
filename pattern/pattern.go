@@ -115,24 +115,22 @@ func (m *Matcher) Matches(in []byte) [][]byte {
 				result = append(result, in)
 			}
 			return result
-		} else {
-			ls := expr[i+1].(literals)
-			i := bytes.Index(in, ls)
-			if i == -1 {
-				// if a capture is missed we return up to the end as the capture.
-				if !capt.isUnnamed() {
-					result = append(result, in)
-				}
-				return result
-			}
-			if capt.isUnnamed() {
-				in = in[len(ls)+i:]
-				continue
-			}
-			result = append(result, in[:i])
-			in = in[len(ls)+i:]
 		}
-
+		ls := expr[i+1].(literals)
+		i := bytes.Index(in, ls)
+		if i == -1 {
+			// if a capture is missed we return up to the end as the capture.
+			if !capt.isUnnamed() {
+				result = append(result, in)
+			}
+			return result
+		}
+		if capt.isUnnamed() {
+			in = in[len(ls)+i:]
+			continue
+		}
+		result = append(result, in[:i])
+		in = in[len(ls)+i:]
 	}
 
 	return result
