@@ -16,14 +16,14 @@ func TestRunCLI(t *testing.T) {
 	}{
 		{
 			name:      "valid pattern with match",
-			args:      []string{"patt", "something <_>"},
+			args:      []string{"patt", "-R", "something <_>"},
 			stdin:     "something match\n",
 			expectErr: false,
 			expectOut: "something match\n",
 		},
 		{
 			name:      "valid pattern with no match",
-			args:      []string{"patt", "something <_>"},
+			args:      []string{"patt", "-R", "something <_>"},
 			stdin:     "other match\n",
 			expectErr:	true,
 			expectOut: "",
@@ -43,8 +43,8 @@ func TestRunCLI(t *testing.T) {
 			expectOut: "",
 		},
 		{
-			name:      "input file",
-			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <_>", "", "test_files/Apache_2k.log"},
+			name:      "search only, input file",
+			args:      []string{"patt",  "-R", "[Sun Dec 04 04:51:08 2005] <_>","test_files/Apache_2k.log"},
 			stdin:     "",
 			expectErr: false,
 			expectOut: `[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10`+"\n",
