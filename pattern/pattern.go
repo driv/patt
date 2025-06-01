@@ -42,9 +42,6 @@ func ParseLineFilter(in []byte) (*Matcher, error) {
 	if err = e.validateNoConsecutiveCaptures(); err != nil {
 		return nil, err
 	}
-	if err = e.validateNoNamedCaptures(); err != nil {
-		return nil, err
-	}
 	return &Matcher{e: e}, nil
 }
 

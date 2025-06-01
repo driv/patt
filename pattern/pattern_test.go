@@ -258,8 +258,6 @@ func Test_ParseLineFilter(t *testing.T) {
 		{"<_>", nil}, // Meaningless, but valid: matches everything.
 		{"", nil},    // Empty pattern matches empty lines.
 		{"foo <_> bar <_>", nil},
-		{"<foo <foo> bar <_>", fmt.Errorf("%w: found '<foo>'", ErrCaptureNotAllowed)},
-		{"<foo>", fmt.Errorf("%w: found '<foo>'", ErrCaptureNotAllowed)},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := ParseLineFilter([]byte(tt.name))
