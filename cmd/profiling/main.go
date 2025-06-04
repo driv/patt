@@ -22,7 +22,7 @@ func main() {
 	}
 	defer pprof.StopCPUProfile()
 
-	args := []string{"patt", "[<_> <_>] [error] <_>", "", "./test_files/Apache_500MB.log"}
+	args := []string{"patt", "[<_> <_>] [error] <_>", "", "./testdata/Apache_500MB.log"}
 	patt.RunCLI(args, os.Stdin, os.Stdout)
 
 	f, err = os.Create("mem.prof")

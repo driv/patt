@@ -25,7 +25,7 @@ func TestRunCLI(t *testing.T) {
 			name:      "valid pattern with no match",
 			args:      []string{"patt", "-R", "something <_>"},
 			stdin:     "other match\n",
-			expectErr:	true,
+			expectErr: true,
 			expectOut: "",
 		},
 		{
@@ -44,14 +44,14 @@ func TestRunCLI(t *testing.T) {
 		},
 		{
 			name:      "search only, input file",
-			args:      []string{"patt",  "-R", "[Sun Dec 04 04:51:08 2005] <_>","test_files/Apache_2k.log"},
+			args:      []string{"patt", "-R", "[Sun Dec 04 04:51:08 2005] <_>", "testdata/Apache_2k.log"},
 			stdin:     "",
 			expectErr: false,
-			expectOut: `[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10`+"\n",
+			expectOut: `[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10` + "\n",
 		},
 		{
 			name:      "invalid input file",
-			args:      []string{"patt", "<_>", "", "test_files/non-existent.log"},
+			args:      []string{"patt", "<_>", "", "testdata/non-existent.log"},
 			stdin:     "",
 			expectErr: true,
 			expectOut: "",
@@ -67,7 +67,7 @@ func TestRunCLI(t *testing.T) {
 			name:      "valid replacement with no match",
 			args:      []string{"patt", "something <placeholder>", "found <placeholder>!"},
 			stdin:     "other match\n",
-			expectErr:	true,
+			expectErr: true,
 			expectOut: "",
 		},
 		{
@@ -86,9 +86,9 @@ func TestRunCLI(t *testing.T) {
 
 			err := patt.RunCLI(tt.args, stdin, stdout)
 
-			if (err != nil) != tt.expectErr{
+			if (err != nil) != tt.expectErr {
 				t.Errorf("expected error %v, got %v", tt.expectErr, err)
-			} 
+			}
 			if stdout.String() != tt.expectOut {
 				t.Errorf("expected stdout %q, got %q", tt.expectOut, stdout.String())
 			}

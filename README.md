@@ -36,7 +36,7 @@ A fast CLI tool for log pattern matching and replacement, based on [Grafana Loki
 ### Example: Extracting Days from Error Logs
 
 ```sh
-./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log
+./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./testdata/Apache_2k.log
 Day: Mon
 Day: Mon
 <...>
@@ -47,7 +47,7 @@ Day: Mon
 Count errors per day in an Apache log file:
 
 ```sh
-./patt "[<day> <_>] [error] <_>" "Day: <day>" ./test_files/Apache_2k.log | \
+./patt "[<day> <_>] [error] <_>" "Day: <day>" ./testdata/Apache_2k.log | \
  sort | uniq -c | \
  ./patt " <count> Day: <day>" "There were <count> errors on <day>";
 
@@ -58,21 +58,21 @@ There were    311 errors on Sun
 ## Benchmark
 
 ```sh
-$ hyperfine "./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log"     "awk '/\[error\]/ { if (match(\$0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print \"Day: \" m[1] }' ./test_files/Apache_2k.log"
+$ hyperfine "./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./testdata/Apache_2k.log"     "awk '/\[error\]/ { if (match(\$0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print \"Day: \" m[1] }' ./testdata/Apache_2k.log"
 
-Benchmark 1: ./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log
+Benchmark 1: ./patt '[<day> <_>] [error] <_>' 'Day: <day>' ./testdata/Apache_2k.log
   Time (mean ± σ):       6.1 ms ±   0.8 ms    [User: 2.8 ms, System: 4.1 ms]
   Range (min … max):     5.0 ms …  10.6 ms    279 runs
 
   Warning: Command took less than 5 ms to complete. Results might be inaccurate.
 
-Benchmark 2: awk '/\[error\]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print "Day: " m[1] }' ./test_files/Apache_2k.log
+Benchmark 2: awk '/\[error\]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print "Day: " m[1] }' ./testdata/Apache_2k.log
   Time (mean ± σ):      27.8 ms ±   5.8 ms    [User: 22.8 ms, System: 4.7 ms]
   Range (min … max):    13.4 ms …  53.8 ms    63 runs
 
 Summary
-  './patt '[<day> <_>] [error] <_>' 'Day: <day>' ./test_files/Apache_2k.log' ran
-    4.55 ± 1.13 times faster than 'awk '/\[error\]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print "Day: " m[1] }' ./test_files/Apache_2k.log'
+  './patt '[<day> <_>] [error] <_>' 'Day: <day>' ./testdata/Apache_2k.log' ran
+    4.55 ± 1.13 times faster than 'awk '/\[error\]/ { if (match($0, /^\[([A-Za-z]+) .*\] \[error\]/, m)) print "Day: " m[1] }' ./testdata/Apache_2k.log'
 ```
 
 ## Installation

@@ -162,7 +162,7 @@ someone once
 	})
 }
 func TestParseApacheLogFile(t *testing.T) {
-	filePath := "test_files/Apache_2k.log"
+	filePath := "testdata/Apache_2k.log"
 
 	input, err := os.OpenFile(filePath, os.O_RDONLY, 0)
 	if err != nil {
@@ -216,7 +216,7 @@ someone once
 }
 
 func BenchmarkParseLargeFile(b *testing.B) {
-	filePath := "test_files/Apache_500MB.log"
+	filePath := "testdata/Apache_500MB.log"
 	reader, err := os.OpenFile(filePath, os.O_RDONLY, 0)
 	if err != nil {
 		b.Fatalf("failed to open file: %v", err)
@@ -244,7 +244,7 @@ func BenchmarkParseLargeFile(b *testing.B) {
 }
 
 func BenchmarkParseMemoryLoadedFile(b *testing.B) {
-	filePath := "test_files/Apache_500MB.log"
+	filePath := "testdata/Apache_500MB.log"
 	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
 		b.Fatalf("failed to read file: %v", err)
