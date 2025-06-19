@@ -47,11 +47,11 @@ func TestRunCLI(t *testing.T) {
 			args:      []string{"patt", "-R", "[Sun Dec 04 04:51:08 2005] <_>", "testdata/Apache_2k.log"},
 			stdin:     "",
 			expectErr: false,
-			expectOut: `[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10` + "\n",
+			expectOut: "[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10\n",
 		},
 		{
 			name:      "invalid input file",
-			args:      []string{"patt", "<_>", "", "testdata/non-existent.log"},
+			args:      []string{"patt", "something <placeholder>", "found <placeholder>!", "testdata/non-existent.log"},
 			stdin:     "",
 			expectErr: true,
 			expectOut: "",
