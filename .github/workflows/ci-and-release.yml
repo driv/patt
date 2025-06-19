@@ -32,7 +32,7 @@ jobs:
     - name: Build the application
       run: |
         mkdir -p build
-        GOOS=linux GOARCH=amd64 go build -o build/app ./cmd/cli
+        GOOS=linux GOARCH=amd64 go build -o build/app ./cmd/patt
 
   release:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
@@ -69,12 +69,12 @@ jobs:
         mkdir -p dist
         
         # Build for multiple platforms
-        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-linux-amd64 ./cmd/cli
-        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-linux-arm64 ./cmd/cli
-        GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-darwin-amd64 ./cmd/cli
-        GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-darwin-arm64 ./cmd/cli
-        GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-windows-amd64.exe ./cmd/cli
-        GOOS=windows GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-windows-arm64.exe ./cmd/cli
+        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-linux-amd64 ./cmd/patt
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-linux-arm64 ./cmd/patt
+        GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-darwin-amd64 ./cmd/patt
+        GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-darwin-arm64 ./cmd/patt
+        GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-windows-amd64.exe ./cmd/patt
+        GOOS=windows GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-windows-arm64.exe ./cmd/patt
 
     - name: Create checksums
       run: |
