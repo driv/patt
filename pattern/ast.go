@@ -48,15 +48,6 @@ func (e expr) validateNoConsecutiveCaptures() error {
 	return nil
 }
 
-func (e expr) validateNoNamedCaptures() error {
-	for i, n := range e {
-		if c, ok := e[i].(capture); ok && !c.isUnnamed() {
-			return fmt.Errorf("%w: found '%s'", ErrCaptureNotAllowed, n.String())
-		}
-	}
-	return nil
-}
-
 func (e expr) validateNoUnnamedCaptures() error {
 	for i, n := range e {
 		if c, ok := e[i].(capture); ok && c.isUnnamed() {

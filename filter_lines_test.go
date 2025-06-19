@@ -204,7 +204,7 @@ someone once
 
 	b.ResetTimer()
 	for b.Loop() {
-		reader.Seek(0, io.SeekStart)
+		_,_ = reader.Seek(0, io.SeekStart)
 		match, err := patt.PrintMatchingLines(matcher, reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
@@ -232,7 +232,7 @@ func BenchmarkParseLargeFile(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		reader.Seek(0, io.SeekStart)
+		_,_ = reader.Seek(0, io.SeekStart)
 		match, err := patt.PrintMatchingLines(matcher, reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
@@ -257,7 +257,7 @@ func BenchmarkParseMemoryLoadedFile(b *testing.B) {
 	reader := bytes.NewReader(fileContent)
 	b.ResetTimer()
 	for b.Loop() {
-		reader.Seek(0, io.SeekStart)
+		_,_ = reader.Seek(0, io.SeekStart)
 		match, err := patt.PrintMatchingLines(matcher, reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
