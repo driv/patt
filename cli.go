@@ -25,7 +25,7 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 	}
 
 	var match bool
-	if params.ReplacementString == "" {
+	if params.ReplaceTemplate == "" {
 		filter, err := NewMatcher(params.PatternString)
 		if err != nil {
 			return fmt.Errorf("cannot parse match template: %w", err)
@@ -35,18 +35,18 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 			return fmt.Errorf("error matching lines: %w", err)
 		}
 	} else {
-		filter, err := NewReplacer(params.PatternString, params.ReplacementString)
+		filter, err := NewReplacer(params.PatternString, params.ReplaceTemplate)
 		if err != nil {
 			return fmt.Errorf("cannot parse template: %w", err)
 		}
-		match, err = ReplaceLines(filter, input, stdout)
+		match, err = PrintLines(filter, input, stdout)
 		if err != nil {
 			return fmt.Errorf("error replacing lines: %w", err)
 		}
 	}
-	if !match {
-		return fmt.Errorf("no match")
-	}
+		if !match {
+			return fmt.Errorf("no match")
+		}
 
 	return nil
 }

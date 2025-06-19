@@ -7,9 +7,8 @@ import (
 	"testing"
 )
 
-
 func TestReplaceMultiline(t *testing.T) {
-	replacer, _ := patt.NewReplacer("<match>","<match>")
+	replacer, _ := patt.NewReplacer("<match>", "<match>")
 	tests := []struct {
 		name     string
 		input    string
@@ -41,7 +40,7 @@ func TestReplaceMultiline(t *testing.T) {
 			input := bytes.NewReader([]byte(tt.input))
 			output := &bytes.Buffer{}
 
-			matched, err := patt.ReplaceLines(replacer, input, output)
+			matched, err := patt.PrintLines(replacer, input, output)
 
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
@@ -104,7 +103,7 @@ func TestReplaceMatchingLines(t *testing.T) {
 			reader := strings.NewReader(tt.input)
 			var writer bytes.Buffer
 
-			matched, err := patt.ReplaceLines(matcher, reader, &writer)
+			matched, err := patt.PrintLines(matcher, reader, &writer)
 
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)

@@ -7,10 +7,10 @@ import (
 
 // CLIParams holds the command-line parameters.
 type CLIParams struct {
-	PatternString     string
-	ReplacementString string
-	InputFile         string
-	SearchOnly        bool
+	PatternString   string
+	ReplaceTemplate string
+	InputFile       string
+	SearchOnly      bool
 }
 
 // Updated ParseCLIParams to handle ReplacementString
@@ -29,16 +29,16 @@ func ParseCLIParams(argsWithFlags []string) (*CLIParams, error) {
 	}
 
 	if result.PatternString == "" {
-		return nil, errors.New("patt match_pattern replace_pattern [file]")
+		return nil, errors.New("patt match_pattern replace_template [file]")
 	}
 
 	if searchOnly {
 		result.InputFile = flags.Arg(1)
 	} else {
-		result.ReplacementString = flags.Arg(1)
+		result.ReplaceTemplate = flags.Arg(1)
 		result.InputFile = flags.Arg(2)
-		if result.ReplacementString == "" {
-			return nil, errors.New("replacement pattern not provided")
+		if result.ReplaceTemplate == "" {
+			return nil, errors.New("patt match_pattern replace_template [file]")
 		}
 	}
 	return result, nil

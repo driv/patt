@@ -14,40 +14,40 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 			name: "input file",
 			args: []string{"pattern", "replacement", "input.txt"},
 			want: CLIParams{
-				PatternString: "pattern",
-				ReplacementString: "replacement",
-				SearchOnly: false,
-				InputFile: "input.txt",
+				PatternString:   "pattern",
+				ReplaceTemplate: "replacement",
+				SearchOnly:      false,
+				InputFile:       "input.txt",
 			},
 		},
 		{
 			name: "stdin",
 			args: []string{"pattern", "replacement"},
 			want: CLIParams{
-				PatternString:     "pattern",
-				ReplacementString: "replacement",
-				SearchOnly:        false,
-				InputFile:         "",
+				PatternString:   "pattern",
+				ReplaceTemplate: "replacement",
+				SearchOnly:      false,
+				InputFile:       "",
 			},
 		},
 		{
 			name: "search only stdin",
-			args: []string{ "-R", "pattern"},
+			args: []string{"-R", "pattern"},
 			want: CLIParams{
-				PatternString:     "pattern",
-				SearchOnly:        true,
-				ReplacementString: "",
-				InputFile:         "",
+				PatternString:   "pattern",
+				SearchOnly:      true,
+				ReplaceTemplate: "",
+				InputFile:       "",
 			},
 		},
 		{
 			name: "search only input file",
-			args: []string{ "-R", "pattern", "input.txt"},
+			args: []string{"-R", "pattern", "input.txt"},
 			want: CLIParams{
-				PatternString:     "pattern",
-				ReplacementString: "",
-				SearchOnly:        true,
-				InputFile:         "input.txt",
+				PatternString:   "pattern",
+				ReplaceTemplate: "",
+				SearchOnly:      true,
+				InputFile:       "input.txt",
 			},
 		},
 	}
@@ -68,12 +68,12 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 
 func TestParseCLIParams_WithErrors(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    []string
+		name string
+		args []string
 	}{
 		{
-			name:    "missing pattern",
-			args:    []string{},
+			name: "missing pattern",
+			args: []string{},
 		},
 		{
 			name: "missing replace template",
