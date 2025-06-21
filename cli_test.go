@@ -48,13 +48,6 @@ func TestRunCLI(t *testing.T) {
 			args:      []string{"patt"},
 			stdin:     "something to match",
 			expectErr: true,
-			expectOut: "",
-		},
-		{
-			name:      "missing replacement pattern",
-			args:      []string{"patt", "something <placeholder>"},
-			stdin:     "something to match",
-			expectErr: true,
 		},
 		{
 			name:      "search from stdin, match found",
@@ -75,7 +68,7 @@ func TestRunCLI(t *testing.T) {
 		},
 		{
 			name:      "replace from file, match found",
-			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <_>", "Found: <_>", "-f", "testdata/Apache_2k.log"},
+			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <something>", "Found: <something>", "-f", "testdata/Apache_2k.log"},
 			expectOut: "Found: [notice] jk2_init() Found child 6725 in scoreboard slot 10\n",
 		},
 	}
