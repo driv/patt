@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"patt"
-	"regexp"
 	"strings"
 	"testing"
 )
