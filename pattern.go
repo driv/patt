@@ -27,7 +27,7 @@ func (m PatternMatcher) Match(b []byte) bool {
 }
 
 func NewFilter(stringPattern string) (LineReplacer, error) {
-	filter, err := pattern.New(stringPattern)
+	filter, err := pattern.ParseLineFilter([]byte(stringPattern))
 	if err != nil {
 		return nil, err
 	}

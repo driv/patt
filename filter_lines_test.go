@@ -116,7 +116,7 @@ func makeMatcher(t testing.TB, stringPattern string) patt.LineReplacer {
 	t.Helper()
 	matcher, err := patt.NewFilter(stringPattern)
 	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
 	return matcher
 }
