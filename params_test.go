@@ -11,42 +11,38 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 		want CLIParams
 	}{
 		{
-			name: "input file",
-			args: []string{"pattern", "replacement", "input.txt"},
+			name: "replace with input file",
+			args: []string{"pattern", "replacement", "-f", "input.txt"},
 			want: CLIParams{
 				PatternString:   "pattern",
 				ReplaceTemplate: "replacement",
-				SearchOnly:      false,
 				InputFile:       "input.txt",
 			},
 		},
 		{
-			name: "stdin",
+			name: "replace from stdin",
 			args: []string{"pattern", "replacement"},
 			want: CLIParams{
 				PatternString:   "pattern",
 				ReplaceTemplate: "replacement",
-				SearchOnly:      false,
 				InputFile:       "",
 			},
 		},
 		{
-			name: "search only stdin",
-			args: []string{"-R", "pattern"},
+			name: "search only from stdin",
+			args: []string{"pattern"},
 			want: CLIParams{
 				PatternString:   "pattern",
-				SearchOnly:      true,
 				ReplaceTemplate: "",
 				InputFile:       "",
 			},
 		},
 		{
-			name: "search only input file",
-			args: []string{"-R", "pattern", "input.txt"},
+			name: "search only with input file",
+			args: []string{"pattern", "-f", "input.txt"},
 			want: CLIParams{
 				PatternString:   "pattern",
 				ReplaceTemplate: "",
-				SearchOnly:      true,
 				InputFile:       "input.txt",
 			},
 		},
@@ -74,10 +70,6 @@ func TestParseCLIParams_WithErrors(t *testing.T) {
 		{
 			name: "missing pattern",
 			args: []string{},
-		},
-		{
-			name: "missing replace template",
-			args: []string{"pattern"},
 		},
 	}
 

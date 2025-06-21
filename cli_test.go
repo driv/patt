@@ -15,13 +15,13 @@ func TestRunCLI(t *testing.T) {
 		expectOut string
 	}{
 		{
-			name:      "match found in stdin",
+			name:      "replace from stdin, match found",
 			args:      []string{"patt", "something <placeholder>", "found <placeholder>!"},
 			stdin:     "something match\n",
 			expectOut: "found match!\n",
 		},
 		{
-			name:      "no match in stdin",
+			name:      "replace from stdin, no match",
 			args:      []string{"patt", "something <placeholder>", "found <placeholder>!"},
 			stdin:     "other match\n",
 			expectErr: true,
@@ -40,7 +40,7 @@ func TestRunCLI(t *testing.T) {
 		},
 		{
 			name:      "invalid input file",
-			args:      []string{"patt", "something <placeholder>", "found <placeholder>!", "testdata/non-existent.log"},
+			args:      []string{"patt", "something <placeholder>", "found <placeholder>!", "-f", "testdata/non-existent.log"},
 			expectErr: true,
 		},
 		{
@@ -57,33 +57,26 @@ func TestRunCLI(t *testing.T) {
 			expectErr: true,
 		},
 		{
-			name:      "search mode: match found in stdin",
-			args:      []string{"patt", "-R", "something <_>"},
+			name:      "search from stdin, match found",
+			args:      []string{"patt", "something <_>"},
 			stdin:     "something match\n",
 			expectOut: "something match\n",
 		},
 		{
-			name:      "search mode: no match in stdin",
-			args:      []string{"patt", "-R", "something <_>"},
+			name:      "search from stdin, no match",
+			args:      []string{"patt", "something <_>"},
 			stdin:     "other match\n",
 			expectErr: true,
 		},
 		{
-			name:      "search mode: invalid pattern",
-			args:      []string{"patt", "-R", "something <_><_>"},
-			stdin:     "something match",
-			expectErr: true,
-		},
-		{
-			name:      "search mode: missing argument",
-			args:      []string{"patt", "-R"},
-			stdin:     "something",
-			expectErr: true,
-		},
-		{
-			name:      "search mode: match found in file",
-			args:      []string{"patt", "-R", "[Sun Dec 04 04:51:08 2005] <_>", "testdata/Apache_2k.log"},
+			name:      "search from file, match found",
+			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <_>", "-f", "testdata/Apache_2k.log"},
 			expectOut: "[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10\n",
+		},
+		{
+			name:      "replace from file, match found",
+			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <_>", "Found: <_>", "-f", "testdata/Apache_2k.log"},
+			expectOut: "Found: [notice] jk2_init() Found child 6725 in scoreboard slot 10\n",
 		},
 	}
 

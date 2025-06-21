@@ -1,8 +1,7 @@
 package patt
 
 import (
-	"errors"
-	"flag"
+	"github.com/alecthomas/kingpin/v2"
 )
 
 // CLIParams holds the command-line parameters.
@@ -10,36 +9,25 @@ type CLIParams struct {
 	PatternString   string
 	ReplaceTemplate string
 	InputFile       string
-	SearchOnly      bool
 }
 
-// Updated ParseCLIParams to handle ReplacementString
+// ParseCLIParams using kingpin for robust CLI parsing
 func ParseCLIParams(argsWithFlags []string) (*CLIParams, error) {
-	flags := flag.NewFlagSet("patt", flag.ContinueOnError)
-	var searchOnly bool
-	flags.BoolVar(&searchOnly, "R", false, "Search only, without replacement")
-	err := flags.Parse(argsWithFlags)
+	app := kingpin.New("patt", "Pattern-based log matcher and replacer")
+	pattern := app.Arg("pattern", "Pattern to search for").Required().String()
+	replacement := app.Arg("replacement", "Replacement template (optional)").Default("").String()
+	inputFile := app.Flag("file", "Input file (optional)").Short('f').String()
+
+	// kingpin expects os.Args[1:], but we want to support custom args
+	_, err := app.Parse(argsWithFlags)
 	if err != nil {
 		return nil, err
 	}
 
-	result := &CLIParams{
-		PatternString: flags.Arg(0),
-		SearchOnly:    searchOnly,
+	params := &CLIParams{
+		PatternString:   *pattern,
+		ReplaceTemplate: *replacement,
+		InputFile:       *inputFile,
 	}
-
-	if result.PatternString == "" {
-		return nil, errors.New("patt match_pattern replace_template [file]")
-	}
-
-	if searchOnly {
-		result.InputFile = flags.Arg(1)
-	} else {
-		result.ReplaceTemplate = flags.Arg(1)
-		result.InputFile = flags.Arg(2)
-		if result.ReplaceTemplate == "" {
-			return nil, errors.New("patt match_pattern replace_template [file]")
-		}
-	}
-	return result, nil
+	return params, nil
 }
