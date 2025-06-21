@@ -26,12 +26,22 @@ func (m PatternMatcher) Match(b []byte) bool {
 	return m.filter.Test(b)
 }
 
-func NewMatcher(stringPattern string) (*PatternMatcher, error) {
-	filter, err := pattern.ParseLineFilter([]byte(stringPattern))
+func NewFilter(stringPattern string) (LineReplacer, error) {
+	filter, err := pattern.New(stringPattern)
 	if err != nil {
 		return nil, err
 	}
-	return &PatternMatcher{filter: *filter}, err
+	matcher := PatternMatcher{filter: *filter}
+	replacer := matchFilter{PatternMatcher: &matcher}
+	return replacer, nil
+}
+
+type matchFilter struct {
+	*PatternMatcher
+}
+
+func (mf matchFilter) Replace(line []byte) ([]byte, error) {
+	return line, nil
 }
 
 func NewReplacer(stringPattern, stringReplaceTemplate string) (*Replacer, error) {

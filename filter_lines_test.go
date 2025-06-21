@@ -98,7 +98,7 @@ func TestPrintMatchingLines_Merged(t *testing.T) {
 			reader := strings.NewReader(tt.input)
 			var writer bytes.Buffer
 
-			matched, err := patt.PrintMatchingLines(matcher, reader, &writer)
+			matched, err := patt.PrintLines(matcher, reader, &writer)
 
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
@@ -113,54 +113,15 @@ func TestPrintMatchingLines_Merged(t *testing.T) {
 	}
 }
 
-func makeMatcher(t testing.TB, stringPattern string) patt.LinesMatcher {
+func makeMatcher(t testing.TB, stringPattern string) patt.LineReplacer {
 	t.Helper()
-	matcher, err := patt.NewMatcher(stringPattern)
+	matcher, err := patt.NewFilter(stringPattern)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 	return matcher
 }
 
-// BenchmarkMatchLines compares pattern matcher and regex matcher on small repeated input.
-func BenchmarkMatchLines(b *testing.B) {
-	input := strings.Repeat(`something once
-something twice
-something thrice
-not matching once
-someone once
-`, 10)
-	pattern := "somet<_> <_>"
-	regex := `somet.+ .+`
-
-	b.Run("pattern matcher", func(b *testing.B) {
-		matcher := makeMatcher(b, pattern)
-		b.SetBytes(int64(len(input)))
-		b.ResetTimer()
-		for b.Loop() {
-			reader := strings.NewReader(input)
-			var writer bytes.Buffer
-			_, err := patt.PrintMatchingLines(matcher, reader, &writer)
-			if err != nil {
-				b.Fatalf("error: %v", err)
-			}
-		}
-	})
-
-	b.Run("regex matcher", func(b *testing.B) {
-		re := regexp.MustCompile(regex)
-		b.SetBytes(int64(len(input)))
-		b.ResetTimer()
-		for b.Loop() {
-			reader := strings.NewReader(input)
-			var writer bytes.Buffer
-			_, err := patt.PrintMatchingLines(re, reader, &writer)
-			if err != nil {
-				b.Fatalf("error: %v", err)
-			}
-		}
-	})
-}
 func TestParseApacheLogFile(t *testing.T) {
 	filePath := "testdata/Apache_2k.log"
 
@@ -170,7 +131,7 @@ func TestParseApacheLogFile(t *testing.T) {
 	}
 	var writer bytes.Buffer
 	matcher := makeMatcher(t, "[<_>] [error] <_>")
-	match, err := patt.PrintMatchingLines(matcher, input, &writer)
+	match, err := patt.PrintLines(matcher, input, &writer)
 	if err != nil {
 		t.Fatalf("error during matching: %v", err)
 	}
@@ -204,8 +165,8 @@ someone once
 
 	b.ResetTimer()
 	for b.Loop() {
-		_,_ = reader.Seek(0, io.SeekStart)
-		match, err := patt.PrintMatchingLines(matcher, reader, writer)
+		_, _ = reader.Seek(0, io.SeekStart)
+		match, err := patt.PrintLines(matcher, reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}
@@ -232,8 +193,8 @@ func BenchmarkParseLargeFile(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		_,_ = reader.Seek(0, io.SeekStart)
-		match, err := patt.PrintMatchingLines(matcher, reader, writer)
+		_, _ = reader.Seek(0, io.SeekStart)
+		match, err := patt.PrintLines(matcher, reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}
@@ -257,8 +218,8 @@ func BenchmarkParseMemoryLoadedFile(b *testing.B) {
 	reader := bytes.NewReader(fileContent)
 	b.ResetTimer()
 	for b.Loop() {
-		_,_ = reader.Seek(0, io.SeekStart)
-		match, err := patt.PrintMatchingLines(matcher, reader, writer)
+		_, _ = reader.Seek(0, io.SeekStart)
+		match, err := patt.PrintLines(matcher, reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}

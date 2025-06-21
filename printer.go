@@ -17,23 +17,9 @@ func NewLineProcessor(r io.Reader, w io.Writer) *LineProcessor {
 	}
 }
 
-func PrintMatchingLines(filter LinesMatcher, reader io.Reader, writer io.Writer) (bool, error) {
-	replacer := matchFilter{LinesMatcher: filter}
-	processor := NewLineProcessor(reader, writer)
-	return processor.processLines(replacer)
-}
-
 func PrintLines(replacer LineReplacer, reader io.Reader, writer io.Writer) (bool, error) {
 	processor := NewLineProcessor(reader, writer)
 	return processor.processLines(replacer)
-}
-
-type matchFilter struct {
-	LinesMatcher
-}
-
-func (mf matchFilter) Replace(line []byte) ([]byte, error) {
-	return line, nil
 }
 
 func (p *LineProcessor) processLines(replacer LineReplacer) (bool, error) {

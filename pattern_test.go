@@ -23,7 +23,7 @@ func TestMatcher(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			matcher, _ := patt.NewMatcher(tt.stringPattern)
+			matcher, _ := patt.NewFilter(tt.stringPattern)
 			gotMatch := matcher.Match([]byte(tt.inputLine))
 			if gotMatch != tt.match {
 				t.Errorf("NewMatcher() = %v, expected: %v", gotMatch, tt.match)
@@ -59,7 +59,7 @@ func TestMakeMatcher(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := patt.NewMatcher(tt.stringPattern)
+			got, err := patt.NewFilter(tt.stringPattern)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewMatcher() error = %v, expected err: %v", err, tt.wantErr)
 			}
