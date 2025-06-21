@@ -24,7 +24,7 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 		input = inputFile
 	}
 
-	var match bool
+	processor := NewLineProcessor(input, stdout, params.Keep)
 
 	var replacer LineReplacer
 	if params.ReplaceTemplate == "" {
@@ -35,7 +35,7 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("cannot parse template: %w", err)
 	}
-	match, err = PrintLines(replacer, input, stdout)
+	match, err := processor.ProcessLines(replacer)
 	if err != nil {
 		return fmt.Errorf("error matching lines: %w", err)
 	}

@@ -17,12 +17,13 @@ A fast CLI tool for log pattern matching and replacement, based on [Grafana Loki
 ## Usage
 
 ```sh
-patt "<pattern>" ["<replacement>"] [-f <input-file>]
+patt "<pattern>" ["<replacement>"] [-f <input-file>] [-k]
 ```
 
 - `<pattern>`: Loki-style pattern, e.g. `[<day> <_>] [error] <_>`
 - `<replacement>`: (Optional) Output template using named captures, e.g. `Day: <day>`
 - `-f <input-file>`: (Optional, defaults to stdin) Path to the log file
+- `-k, --keep`: (Optional) Print non-matching lines as well (like `sed`)
 
 ### Examples
 
@@ -67,6 +68,14 @@ patt "[<day> <_>] [error] <_>" "Day: <day>" -f ./testdata/Apache_2k.log | \
 There were    284 errors on Mon
 There were    311 errors on Sun
 ```
+
+#### Highlight error lines, but keep all lines
+
+```sh
+patt '[<day> <_>] [error] <message>' '[ERROR] <day>: <message>' -f ./testdata/Apache_2k.log -k
+```
+
+- All lines are printed. Lines matching the pattern are reformatted to highlight errors; non-matching lines are printed unchanged.
 
 ## Benchmark
 

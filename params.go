@@ -9,25 +9,25 @@ type CLIParams struct {
 	PatternString   string
 	ReplaceTemplate string
 	InputFile       string
+	Keep            bool
 }
 
-// ParseCLIParams using kingpin for robust CLI parsing
 func ParseCLIParams(argsWithFlags []string) (*CLIParams, error) {
 	app := kingpin.New("patt", "Pattern-based log matcher and replacer")
 	pattern := app.Arg("pattern", "Pattern to search for").Required().String()
 	replacement := app.Arg("replacement", "Replacement template (optional)").Default("").String()
 	inputFile := app.Flag("file", "Input file (optional)").Short('f').String()
+	keep := app.Flag("keep", "Print non-matching lines").Short('k').Bool()
 
-	// kingpin expects os.Args[1:], but we want to support custom args
 	_, err := app.Parse(argsWithFlags)
 	if err != nil {
 		return nil, err
 	}
 
-	params := &CLIParams{
+	return &CLIParams{
 		PatternString:   *pattern,
 		ReplaceTemplate: *replacement,
 		InputFile:       *inputFile,
-	}
-	return params, nil
+		Keep:            *keep,
+	}, nil
 }

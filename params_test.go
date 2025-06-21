@@ -46,6 +46,26 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 				InputFile:       "input.txt",
 			},
 		},
+		{
+			name: "replace with input file and keep",
+			args: []string{"pattern", "replacement", "-f", "input.txt", "-k"},
+			want: CLIParams{
+				PatternString:   "pattern",
+				ReplaceTemplate: "replacement",
+				InputFile:       "input.txt",
+				Keep:            true,
+			},
+		},
+		{
+			name: "search only with keep",
+			args: []string{"pattern", "-k"},
+			want: CLIParams{
+				PatternString:   "pattern",
+				ReplaceTemplate: "",
+				InputFile:       "",
+				Keep:            true,
+			},
+		},
 	}
 
 	for _, tt := range tests {

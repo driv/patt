@@ -62,6 +62,18 @@ func TestRunCLI(t *testing.T) {
 			expectErr: true,
 		},
 		{
+			name:      "search from stdin, keep non-matching lines",
+			args:      []string{"patt", "something <_>", "-k"},
+			stdin:     "something match\nno match\n",
+			expectOut: "something match\nno match\n",
+		},
+		{
+			name:      "replace from stdin, keep non-matching lines",
+			args:      []string{"patt", "something <placeholder>", "found <placeholder>!", "-k"},
+			stdin:     "something match\nno match\n",
+			expectOut: "found match!\nno match\n",
+		},
+		{
 			name:      "search from file, match found",
 			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <_>", "-f", "testdata/Apache_2k.log"},
 			expectOut: "[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10\n",
