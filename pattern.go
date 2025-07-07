@@ -107,3 +107,49 @@ func (r *Replacer) Replace(b []byte) ([]byte, error) {
 
 	return result, nil
 }
+
+func NewMultiReplacer(patterns []string, template string) (*MultiReplacer, error) {
+	replacers := make([]*Replacer, 0, len(patterns))
+	for _, pat := range patterns {
+		r, err := NewReplacer(pat, template)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create replacer for pattern '%s' with template '%s': %w", pat, template, err)
+		}
+		replacers = append(replacers, r)
+	}
+	return &MultiReplacer{
+		patterns:  patterns,
+		replacers: replacers,
+	}, nil
+}
+
+// MultiReplacer matches multiple patterns and applies a single replacement template.
+// 
+// Usage Note:
+// The Replace method requires that Match(line) has previously returned true for the same line.
+// If Replace is called without a prior successful Match, it will return an error.
+type MultiReplacer struct {
+	patterns      []string
+	replacers     []*Replacer
+	lastMatched   bool
+	lastMatchedIx int
+}
+
+func (m *MultiReplacer) Match(line []byte) bool {
+	for i, r := range m.replacers {
+		if r.Match(line) {
+			m.lastMatchedIx = i
+			m.lastMatched = true
+			return true
+		}
+	}
+	return false
+}
+
+
+func (m *MultiReplacer) Replace(line []byte) ([]byte, error) {
+	if !m.lastMatched {
+		return nil, fmt.Errorf("Replace called without a successful Match")
+	}
+	return m.replacers[m.lastMatchedIx].Replace(line)
+}

@@ -40,7 +40,7 @@ func TestRunCLI(t *testing.T) {
 		},
 		{
 			name:      "invalid input file",
-			args:      []string{"patt", "something <placeholder>", "found <placeholder>!", "-f", "testdata/non-existent.log"},
+			args:      []string{"patt", "something <placeholder>", "found <placeholder>!", "--", "testdata/non-existent.log"},
 			expectErr: true,
 		},
 		{
@@ -75,13 +75,17 @@ func TestRunCLI(t *testing.T) {
 		},
 		{
 			name:      "search from file, match found",
-			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <_>", "-f", "testdata/Apache_2k.log"},
+			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <_>", "--", "testdata/Apache_2k.log"},
 			expectOut: "[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10\n",
 		},
 		{
-			name:      "replace from file, match found",
-			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <something>", "Found: <something>", "-f", "testdata/Apache_2k.log"},
-			expectOut: "Found: [notice] jk2_init() Found child 6725 in scoreboard slot 10\n",
+			name: "replace from file, multiple search patterns, match found",
+			args: []string{"patt",
+				"[Sun Dec 04 04:51:08 2005] <something>",
+				"[Sun Dec 04 04:51:37 2005] <something>",
+				"Found: <something>", "--", "testdata/Apache_2k.log"},
+			expectOut: "Found: [notice] jk2_init() Found child 6725 in scoreboard slot 10\n" +
+				"Found: [notice] jk2_init() Found child 6736 in scoreboard slot 10\n",
 		},
 	}
 
