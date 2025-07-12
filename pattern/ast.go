@@ -11,10 +11,6 @@ type node interface {
 
 type expr []node
 
-func (e expr) hasCapture() bool {
-	return e.captureCount() != 0
-}
-
 func (e expr) validate() error {
 	// Consecutive captures are not allowed.
 	if err := e.validateNoConsecutiveCaptures(); err != nil {
@@ -61,10 +57,6 @@ func (e expr) captures() (captures []string) {
 		}
 	}
 	return
-}
-
-func (e expr) captureCount() (count int) {
-	return len(e.captures())
 }
 
 type capture string

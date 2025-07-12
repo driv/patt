@@ -22,15 +22,17 @@ func NewLineProcessor(r io.Reader, w io.Writer, keepNonMatching bool) *LineProce
 func (p *LineProcessor) ProcessLines(replacer LineReplacer) (bool, error) {
 	defer p.writer.Flush()
 
-	match := false
+	var match bool
 	for p.reader.Scan() {
 		line := p.reader.Bytes()
-		matched, err := p.processLine(line, replacer)
-		if err != nil {
-			return false, err
-		}
-		if matched {
+		if replacer.Match(line) {
+			line = replacer.Replace(line)
 			match = true
+		} else if !p.keepNonMatching {
+			continue
+		}
+		if err := p.writeLine(line); err != nil {
+			return false, err
 		}
 	}
 
@@ -38,35 +40,6 @@ func (p *LineProcessor) ProcessLines(replacer LineReplacer) (bool, error) {
 		return false, err
 	}
 	return match, nil
-}
-
-func (p *LineProcessor) processLine(line []byte, replacer LineReplacer) (bool, error) {
-	var out []byte
-	var matched bool
-	out, matched, b, err := newFunction(replacer, line, out, matched, p)
-	if err != nil {
-		return b, err
-	}
-	if p.keepNonMatching || matched {
-		if err := p.writeLine(out); err != nil {
-			return false, err
-		}
-	}
-	return matched, nil
-}
-
-func newFunction(replacer LineReplacer, line []byte, out []byte, matched bool, p *LineProcessor) ([]byte, bool, bool, error) {
-	if replacer.Match(line) {
-		replaced, err := replacer.Replace(line)
-		if err != nil {
-			return nil, false, false, err
-		}
-		out = replaced
-		matched = true
-	} else if p.keepNonMatching {
-		out = line
-	}
-	return out, matched, false, nil
 }
 
 func (p *LineProcessor) writeLine(line []byte) error {
