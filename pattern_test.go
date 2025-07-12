@@ -86,6 +86,13 @@ func TestReplacer(t *testing.T) {
 			expectedResult:        "Hello Federico!",
 		},
 		{
+			name:                  "Replacement without placeholder",
+			stringPattern:         "My name is <_>",
+			stringReplaceTemplate: "Hello!",
+			inputLine:             "My name is Federico",
+			expectedResult:        "Hello!",
+		},
+		{
 			name:                  "Double replacement in order",
 			stringPattern:         "My name is <name> <surname>",
 			inputLine:             "My name is Federico Nafria",
