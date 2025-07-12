@@ -40,8 +40,8 @@ type matchFilter struct {
 	*PatternMatcher
 }
 
-func (mf matchFilter) Replace(line []byte) ([]byte, error) {
-	return line, nil
+func (mf matchFilter) Replace(line []byte) ([]byte) {
+	return line
 }
 
 func NewReplacer(stringPattern, stringReplaceTemplate string) (*Replacer, error) {
@@ -86,7 +86,7 @@ func capturesPositions(sourceNames []string, replaceNames []string, literals [][
 
 type LineReplacer interface {
 	LinesMatcher
-	Replace(b []byte) ([]byte, error)
+	Replace(b []byte) ([]byte)
 }
 type Replacer struct {
 	*PatternMatcher
@@ -94,7 +94,7 @@ type Replacer struct {
 	positions []int
 }
 
-func (r *Replacer) Replace(b []byte) ([]byte, error) {
+func (r *Replacer) Replace(b []byte) ([]byte) {
 	matches := r.filter.Matches(b)
 	var result []byte
 	for i, l := range r.literals {
@@ -105,5 +105,47 @@ func (r *Replacer) Replace(b []byte) ([]byte, error) {
 		}
 	}
 
-	return result, nil
+	return result
+}
+
+func NewMultiReplacer(patterns []string, template string) (*MultiReplacer, error) {
+	replacers := make([]*Replacer, 0, len(patterns))
+	for _, pat := range patterns {
+		r, err := NewReplacer(pat, template)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create replacer for pattern '%s' with template '%s': %w", pat, template, err)
+		}
+		replacers = append(replacers, r)
+	}
+	return &MultiReplacer{
+		patterns:  patterns,
+		replacers: replacers,
+	}, nil
+}
+
+// MultiReplacer matches multiple patterns and applies a single replacement template.
+// 
+// Usage Note:
+// The Replace method requires that Match(line) has previously returned true for the same line.
+// If Replace is called without a prior successful Match, it will fail.
+type MultiReplacer struct {
+	patterns      []string
+	replacers     []*Replacer
+	lastMatchedIx int
+}
+
+func (m *MultiReplacer) Match(line []byte) bool {
+	for i, r := range m.replacers {
+		if r.Match(line) {
+			m.lastMatchedIx = i
+			return true
+		}
+	}
+	m.lastMatchedIx = -1
+	return false
+}
+
+
+func (m *MultiReplacer) Replace(line []byte) ([]byte) {
+	return m.replacers[m.lastMatchedIx].Replace(line)
 }
