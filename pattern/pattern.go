@@ -6,7 +6,6 @@ import (
 )
 
 var (
-	ErrNoCapture                = errors.New("at least one capture is required")
 	ErrCaptureNotAllowed        = errors.New("named captures are not allowed")
 	ErrUnnamedCaptureNotAllowed = errors.New("unnamed captures are not allowed")
 	ErrInvalidExpr              = errors.New("invalid expression")

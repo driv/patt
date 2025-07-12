@@ -16,9 +16,6 @@ func (e expr) hasCapture() bool {
 }
 
 func (e expr) validate() error {
-	if !e.hasCapture() {
-		return ErrNoCapture
-	}
 	// Consecutive captures are not allowed.
 	if err := e.validateNoConsecutiveCaptures(); err != nil {
 		return err

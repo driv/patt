@@ -64,6 +64,12 @@ var fixtures = []struct {
 		true,
 	},
 	{
+		"<_>",
+		" bar ",
+		nil,
+		true,
+	},
+	{
 		"<path>?<_>",
 		`/api/plugins/versioncheck?slugIn=snuids-trafficlights-panel,input,gel&grafanaVersion=7.0.0-beta1`,
 		[]string{"/api/plugins/versioncheck"},
@@ -234,9 +240,6 @@ func Test_Error(t *testing.T) {
 		{"<f>", nil},
 		{"<f> <a>", nil},
 		{"", newParseError("syntax error: unexpected $end, expecting IDENTIFIER or LITERAL", 1, 1)},
-		{"<_>", ErrNoCapture},
-		{"foo <_> bar <_>", ErrNoCapture},
-		{"foo bar buzz", ErrNoCapture},
 		{"<f><f>", fmt.Errorf("found consecutive capture '<f><f>': %w", ErrInvalidExpr)},
 		{"<f> f<d><b>", fmt.Errorf("found consecutive capture '<d><b>': %w", ErrInvalidExpr)},
 		{"<f> f<f>", fmt.Errorf("duplicate capture name (f): %w", ErrInvalidExpr)},
