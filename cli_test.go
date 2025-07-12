@@ -87,6 +87,12 @@ func TestRunCLI(t *testing.T) {
 			expectOut: "Found: [notice] jk2_init() Found child 6725 in scoreboard slot 10\n" +
 				"Found: [notice] jk2_init() Found child 6736 in scoreboard slot 10\n",
 		},
+		{
+			name:      "search from files, match found",
+			args:      []string{"patt", "[Sun Dec 04 04:51:08 2005] <_>", "--", "testdata/Apache_2k.log", "testdata/Apache_2k.log"},
+			expectOut: "[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10\n" +
+			"[Sun Dec 04 04:51:08 2005] [notice] jk2_init() Found child 6725 in scoreboard slot 10\n",
+		},
 	}
 
 	for _, tt := range tests {

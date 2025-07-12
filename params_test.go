@@ -17,7 +17,7 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 			want: CLIParams{
 				SearchPatterns:  []string{"pattern"},
 				ReplaceTemplate: "replacement",
-				InputFiles:      "input.txt",
+				InputFiles:      []string{"input.txt"},
 			},
 		},
 		{
@@ -41,7 +41,16 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 			want: CLIParams{
 				SearchPatterns:  []string{"pattern"},
 				ReplaceTemplate: "",
-				InputFiles:      "input.txt",
+				InputFiles:      []string{"input.txt"},
+			},
+		},
+		{
+			name: "search only with 2 input files",
+			args: []string{"pattern", "--", "input.txt", "input2.txt"},
+			want: CLIParams{
+				SearchPatterns:  []string{"pattern"},
+				ReplaceTemplate: "",
+				InputFiles:      []string{"input.txt", "input2.txt"},
 			},
 		},
 		{
@@ -50,7 +59,7 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 			want: CLIParams{
 				SearchPatterns:  []string{"pattern"},
 				ReplaceTemplate: "replacement",
-				InputFiles:      "input.txt",
+				InputFiles:      []string{"input.txt"},
 				Keep:            true,
 			},
 		},

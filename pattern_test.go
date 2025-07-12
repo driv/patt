@@ -150,10 +150,7 @@ func TestReplacer(t *testing.T) {
 			if !matches {
 				t.Error("No match")
 			}
-			replacedString, err := replacer.Replace([]byte(tt.inputLine))
-			if err != nil {
-				t.Errorf("Error during replacement: %v", err)
-			}
+			replacedString := replacer.Replace([]byte(tt.inputLine))
 			if diff := cmp.Diff(tt.expectedResult, string(replacedString)); diff != "" {
 				t.Errorf("Failed Replacement (-expected +got):\n%s", diff)
 			}
@@ -258,10 +255,7 @@ func TestMultiReplacer(t *testing.T) {
 				t.Errorf("Match() = %v, want %v", matches, tt.shouldMatch)
 			}
 			if matches {
-				replaced, err := replacer.Replace([]byte(tt.inputLine))
-				if err != nil {
-					t.Errorf("Replace() error = %v", err)
-				}
+				replaced := replacer.Replace([]byte(tt.inputLine))
 				if string(replaced) != tt.expectedResult {
 					t.Errorf("Replace() = %q, want %q", replaced, tt.expectedResult)
 				}
