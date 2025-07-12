@@ -1,33 +1,58 @@
 package patt
 
 import (
-	"github.com/alecthomas/kingpin/v2"
+	"fmt"
 )
 
 // CLIParams holds the command-line parameters.
 type CLIParams struct {
-	PatternString   string
+	SearchPatterns  []string
 	ReplaceTemplate string
-	InputFile       string
+	InputFiles      []string
 	Keep            bool
 }
 
 func ParseCLIParams(argsWithFlags []string) (*CLIParams, error) {
-	app := kingpin.New("patt", "Pattern-based log matcher and replacer")
-	pattern := app.Arg("pattern", "Pattern to search for").Required().String()
-	replacement := app.Arg("replacement", "Replacement template (optional)").Default("").String()
-	inputFile := app.Flag("file", "Input file (optional)").Short('f').String()
-	keep := app.Flag("keep", "Print non-matching lines").Short('k').Bool()
+	result := CLIParams{}
+	var positionalArgs []string
 
-	_, err := app.Parse(argsWithFlags)
-	if err != nil {
-		return nil, err
+	for _, arg := range argsWithFlags {
+		if arg == "-k" || arg == "--keep" {
+			result.Keep = true
+		} else {
+			positionalArgs = append(positionalArgs, arg)
+		}
 	}
 
-	return &CLIParams{
-		PatternString:   *pattern,
-		ReplaceTemplate: *replacement,
-		InputFile:       *inputFile,
-		Keep:            *keep,
-	}, nil
+	var patterns []string
+	var files []string
+	var hasInputFiles bool
+	for _, arg := range positionalArgs {
+		if arg == "--" {
+			hasInputFiles = true
+			continue
+		}
+		if !hasInputFiles {
+			patterns = append(patterns, arg)
+		} else {
+			files = append(files, arg)
+		}
+	}
+
+	if len(patterns) == 0 {
+		return nil, fmt.Errorf("at least one search pattern is required")
+	}
+
+	if len(patterns) > 1 {
+		result.ReplaceTemplate = patterns[len(patterns)-1]
+		result.SearchPatterns = patterns[:len(patterns)-1]
+	} else {
+		result.SearchPatterns = patterns
+	}
+
+	if len(files) > 0 {
+		result.InputFiles = files
+	}
+
+	return &result, nil
 }

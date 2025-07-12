@@ -157,10 +157,7 @@ func TestReplacer(t *testing.T) {
 			if !matches {
 				t.Error("No match")
 			}
-			replacedString, err := replacer.Replace([]byte(tt.inputLine))
-			if err != nil {
-				t.Errorf("Error during replacement: %v", err)
-			}
+			replacedString := replacer.Replace([]byte(tt.inputLine))
 			if diff := cmp.Diff(tt.expectedResult, string(replacedString)); diff != "" {
 				t.Errorf("Failed Replacement (-expected +got):\n%s", diff)
 			}
@@ -214,6 +211,107 @@ func TestMakeReplacer(t *testing.T) {
 			_, err := patt.NewReplacer(tt.matchPattern, tt.replaceTemplate)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewReplacer() error = %v, expected error: %v", err, tt.wantErr)
+			}
+			if tt.wantErr != (err != nil) {
+				t.Errorf("Expected an error but got none")
+			}
+		})
+	}
+}
+
+func TestMultiReplacer(t *testing.T) {
+	tests := []struct {
+		name            string
+		matchPatterns   []string
+		replaceTemplate string
+		inputLine       string
+		expectedResult  string
+		shouldMatch     bool
+	}{
+		{
+			name:            "matches first pattern",
+			matchPatterns:   []string{"foo <bar>", "baz <bar>"},
+			replaceTemplate: "X:<bar>",
+			inputLine:       "foo hello",
+			expectedResult:  "X:hello",
+			shouldMatch:     true,
+		},
+		{
+			name:            "matches second pattern",
+			matchPatterns:   []string{"foo <bar>", "baz <bar>"},
+			replaceTemplate: "Y:<bar>",
+			inputLine:       "baz world",
+			expectedResult:  "Y:world",
+			shouldMatch:     true,
+		},
+		{
+			name:            "no match",
+			matchPatterns:   []string{"foo <bar>", "baz <bar>"},
+			replaceTemplate: "Z:<bar>",
+			inputLine:       "no match here",
+			expectedResult:  "",
+			shouldMatch:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			replacer := makeMultiReplacer(t, tt.matchPatterns, tt.replaceTemplate)
+			matches := replacer.Match([]byte(tt.inputLine))
+			if matches != tt.shouldMatch {
+				t.Errorf("Match() = %v, want %v", matches, tt.shouldMatch)
+			}
+			if matches {
+				replaced := replacer.Replace([]byte(tt.inputLine))
+				if string(replaced) != tt.expectedResult {
+					t.Errorf("Replace() = %q, want %q", replaced, tt.expectedResult)
+				}
+			}
+		})
+	}
+}
+
+func makeMultiReplacer(t *testing.T, patterns []string, template string) *patt.MultiReplacer {
+	t.Helper()
+	replacer, err := patt.NewMultiReplacer(patterns, template)
+	if err != nil {
+		t.Fatalf("Error creating MultiReplacer: %v", err)
+	}
+	return replacer
+}
+
+func TestMakeMultiReplacer(t *testing.T) {
+	tests := []struct {
+		name            string
+		matchPatterns   []string
+		replaceTemplate string
+		wantErr         bool
+	}{
+		{
+			name:            "Valid multi-pattern",
+			matchPatterns:   []string{"foo <bar>", "baz <bar>"},
+			replaceTemplate: "X:<bar>",
+			wantErr:         false,
+		},
+		{
+			name:            "Invalid match pattern",
+			matchPatterns:   []string{"foo <bar><baz>"},
+			replaceTemplate: "X:<bar>",
+			wantErr:         true,
+		},
+		{
+			name:            "Invalid replace template",
+			matchPatterns:   []string{"foo <bar>"},
+			replaceTemplate: "X:<baz>",
+			wantErr:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := patt.NewMultiReplacer(tt.matchPatterns, tt.replaceTemplate)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewMultiReplacer() error = %v, expected error: %v", err, tt.wantErr)
 			}
 			if tt.wantErr != (err != nil) {
 				t.Errorf("Expected an error but got none")
