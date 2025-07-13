@@ -50,7 +50,7 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 	return nil
 }
 
-func replacer(params *CLIParams) (LineReplacer, error) {
+func replacer(params CLIParams) (LineReplacer, error) {
 	switch {
 	case params.ReplaceTemplate == "":
 		return NewFilter(params.SearchPatterns[0])

@@ -2,6 +2,7 @@ package patt
 
 import (
 	"fmt"
+	"github.com/spf13/cobra"
 )
 
 // CLIParams holds the command-line parameters.
@@ -12,47 +13,48 @@ type CLIParams struct {
 	Keep            bool
 }
 
-func ParseCLIParams(argsWithFlags []string) (*CLIParams, error) {
-	result := CLIParams{}
-	var positionalArgs []string
+// ParseCLIParams parses flags + positional args
+//
+//	patt [flags] search_pattern [[more_search ...] replace_pattern]
+//	     [-- file1 [file2 ...]]
+//
+// Flags:   -k / --keep  (bool)
+func ParseCLIParams(argsWithFlags []string) (CLIParams, error) {
+	var out CLIParams
 
-	for _, arg := range argsWithFlags {
-		if arg == "-k" || arg == "--keep" {
-			result.Keep = true
-		} else {
-			positionalArgs = append(positionalArgs, arg)
-		}
+	cmd := &cobra.Command{
+		Use:  "patt [flags] search_pattern [[search_pattern ...] replace_template] [-- input_files...]",
+		Args: cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			doubleDashPos := cmd.ArgsLenAtDash()
+			var patterns []string
+			if doubleDashPos == -1 {
+				patterns = args
+			} else {
+				patterns = args[:doubleDashPos]
+				out.InputFiles = args[doubleDashPos:]
+			}
+
+			switch len(patterns) {
+			case 0:
+				return fmt.Errorf("at least one search pattern is required")
+			case 1:
+				out.SearchPatterns = patterns
+			default:
+				out.SearchPatterns = patterns[:len(patterns)-1]
+				out.ReplaceTemplate = patterns[len(patterns)-1]
+			}
+			return nil
+		},
 	}
 
-	var patterns []string
-	var files []string
-	var hasInputFiles bool
-	for _, arg := range positionalArgs {
-		if arg == "--" {
-			hasInputFiles = true
-			continue
-		}
-		if !hasInputFiles {
-			patterns = append(patterns, arg)
-		} else {
-			files = append(files, arg)
-		}
-	}
+	cmd.Flags().BoolVarP(&out.Keep, "keep", "k", false, "print non‑matching lines")
 
-	if len(patterns) == 0 {
-		return nil, fmt.Errorf("at least one search pattern is required")
+	if err := cmd.ParseFlags(argsWithFlags); err != nil {
+		return out, err
 	}
-
-	if len(patterns) > 1 {
-		result.ReplaceTemplate = patterns[len(patterns)-1]
-		result.SearchPatterns = patterns[:len(patterns)-1]
-	} else {
-		result.SearchPatterns = patterns
+	if err := cmd.RunE(cmd, cmd.Flags().Args()); err != nil {
+		return out, err
 	}
-
-	if len(files) > 0 {
-		result.InputFiles = files
-	}
-
-	return &result, nil
+	return out, nil
 }
