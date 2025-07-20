@@ -18,29 +18,29 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 		return fmt.Errorf("cannot parse template: %w", err)
 	}
 
-	var input []io.ReadCloser
-	if len(params.InputFiles) == 0 {
-		input = append(input, io.NopCloser(stdin))
-	} else {
-		for _, v := range params.InputFiles {
-			//TODO files should be opened lazily
-			inputFile, err := os.OpenFile(v, os.O_RDONLY, 0)
-			if err != nil {
-				return fmt.Errorf("error opening input file: %w", err)
-			}
-			input = append(input, inputFile)
-		}
-		//TODO deal with glob patterns
-	}
-
 	var match bool
-	for _, in := range input {
-		//TODO this should be lazy to open files
-		// process should happen in parallel, writing should be sequential
-		processor := NewLineProcessor(in, stdout, params.Keep)
-		match, err = processor.ProcessLines(replacer)
+	if len(params.InputFiles) == 0 {
+		processor := NewLineProcessor(io.NopCloser(stdin), stdout, replacer, params.Keep)
+		match, err = processor.Process()
 		if err != nil {
 			return fmt.Errorf("error matching lines: %w", err)
+		}
+	} else if len(params.InputFiles) == 1 {
+		inputFile, err := os.OpenFile(params.InputFiles[0], os.O_RDONLY, 0)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %w", params.InputFiles[0], err)
+		}
+		defer inputFile.Close()
+		processor := NewLineProcessor(inputFile, stdout, replacer, params.Keep)
+		match, err = processor.Process()
+		if err != nil {
+			return fmt.Errorf("error matching lines: %w", err)
+		}
+	} else {
+		processor := NewFilesProcessor(params.InputFiles, replacer, stdout, params.Keep)
+		match, err = processor.Process()
+		if err != nil {
+			return fmt.Errorf("error matching files: %w", err)
 		}
 	}
 	if !match {

@@ -39,9 +39,9 @@ func TestReplaceMultiline(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			input := bytes.NewReader([]byte(tt.input))
 			output := &bytes.Buffer{}
-			processor := patt.NewLineProcessor(input, output, false)
+			processor := patt.NewLineProcessor(input, output, replacer, false)
 
-			matched, err := processor.ProcessLines(replacer)
+			matched, err := processor.Process()
 
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
@@ -104,9 +104,9 @@ func TestReplaceMatchingLines(t *testing.T) {
 			reader := strings.NewReader(tt.input)
 			var writer bytes.Buffer
 
-			processor := patt.NewLineProcessor(reader, &writer, false)
+			processor := patt.NewLineProcessor(reader, &writer, matcher, false)
 
-			matched, err := processor.ProcessLines(matcher)
+			matched, err := processor.Process()
 
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)

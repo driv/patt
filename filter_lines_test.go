@@ -96,9 +96,9 @@ func TestPrintMatchingLines_Merged(t *testing.T) {
 			matcher := makeMatcher(t, tt.pattern)
 			reader := strings.NewReader(tt.input)
 			var writer bytes.Buffer
-			processor := patt.NewLineProcessor(reader, &writer, false)
+			processor := patt.NewLineProcessor(reader, &writer, matcher, false)
 
-			match, err := processor.ProcessLines(matcher)
+			match, err := processor.Process()
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
@@ -129,10 +129,10 @@ func TestParseApacheLogFile(t *testing.T) {
 		t.Fatalf("failed to read file: %v", err)
 	}
 	var writer bytes.Buffer
-	processor := patt.NewLineProcessor(input, &writer, false)
 	matcher := makeMatcher(t, "[<_>] [error] <_>")
+	processor := patt.NewLineProcessor(input, &writer, matcher, false)
 
-	match, err := processor.ProcessLines(matcher)
+	match, err := processor.Process()
 	if err != nil {
 		t.Fatalf("error during matching: %v", err)
 	}
@@ -159,16 +159,15 @@ someone once
 	fileContent := buffer.Bytes()
 	reader := bytes.NewReader(fileContent) // Reusable reader
 	writer := io.Discard
-	processor := patt.NewLineProcessor(reader, writer, false)
-
 	matcher := makeMatcher(b, "something <_>")
+	processor := patt.NewLineProcessor(reader, writer, matcher, false)
 
 	b.SetBytes(int64(len(fileContent)))
 
 	b.ResetTimer()
 	for b.Loop() {
 		_, _ = reader.Seek(0, io.SeekStart)
-		match, err := processor.ProcessLines(matcher)
+		match, err := processor.Process()
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}
@@ -192,12 +191,12 @@ func BenchmarkParseLargeFile(b *testing.B) {
 	b.SetBytes(fileInfo.Size())
 	matcher := makeMatcher(b, "[<_>] [error] <_>")
 	writer := io.Discard
-	processor := patt.NewLineProcessor(reader, writer, false)
+	processor := patt.NewLineProcessor(reader, writer, matcher, false)
 
 	b.ResetTimer()
 	for b.Loop() {
 		_, _ = reader.Seek(0, io.SeekStart)
-		match, err := processor.ProcessLines(matcher)
+		match, err := processor.Process()
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}
@@ -219,11 +218,11 @@ func BenchmarkParseMemoryLoadedFile(b *testing.B) {
 
 	writer := io.Discard
 	reader := bytes.NewReader(fileContent)
-	processor := patt.NewLineProcessor(reader, writer, false)
+	processor := patt.NewLineProcessor(reader, writer, matcher, false)
 	b.ResetTimer()
 	for b.Loop() {
 		_, _ = reader.Seek(0, io.SeekStart)
-		match, err := processor.ProcessLines(matcher)
+		match, err := processor.Process()
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}

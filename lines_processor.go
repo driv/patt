@@ -9,24 +9,26 @@ type LineProcessor struct {
 	reader          *bufio.Scanner
 	writer          *bufio.Writer
 	keepNonMatching bool
+	replacer        LineReplacer
 }
 
-func NewLineProcessor(r io.Reader, w io.Writer, keepNonMatching bool) *LineProcessor {
+func NewLineProcessor(r io.Reader, w io.Writer, replacer LineReplacer, keepNonMatching bool) *LineProcessor {
 	return &LineProcessor{
 		reader:          bufio.NewScanner(r),
 		writer:          bufio.NewWriter(w),
 		keepNonMatching: keepNonMatching,
+		replacer:        replacer,
 	}
 }
 
-func (p *LineProcessor) ProcessLines(replacer LineReplacer) (bool, error) {
+func (p *LineProcessor) Process() (bool, error) {
 	defer p.writer.Flush()
 
 	var match bool
 	for p.reader.Scan() {
 		line := p.reader.Bytes()
-		if replacer.Match(line) {
-			line = replacer.Replace(line)
+		if p.replacer.Match(line) {
+			line = p.replacer.Replace(line)
 			match = true
 		} else if !p.keepNonMatching {
 			continue
