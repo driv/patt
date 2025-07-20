@@ -2,6 +2,7 @@ package patt_test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"patt"
@@ -98,7 +99,7 @@ func TestPrintMatchingLines_Merged(t *testing.T) {
 			var writer bytes.Buffer
 			processor := patt.NewLineProcessor(matcher, false)
 
-			match, err := processor.Process(reader, &writer)
+			match, err := processor.Process(context.Background(), reader, &writer)
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
@@ -132,7 +133,7 @@ func TestParseApacheLogFile(t *testing.T) {
 	matcher := makeMatcher(t, "[<_>] [error] <_>")
 	processor := patt.NewLineProcessor(matcher, false)
 
-	match, err := processor.Process(input, &writer)
+	match, err := processor.Process(context.Background(), input, &writer)
 	if err != nil {
 		t.Fatalf("error during matching: %v", err)
 	}
@@ -167,7 +168,7 @@ someone once
 	b.ResetTimer()
 	for b.Loop() {
 		_, _ = reader.Seek(0, io.SeekStart)
-		match, err := processor.Process(reader, writer)
+		match, err := processor.Process(context.Background(), reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}
@@ -196,7 +197,7 @@ func BenchmarkParseLargeFile(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		_, _ = reader.Seek(0, io.SeekStart)
-		match, err := processor.Process(reader, writer)
+		match, err := processor.Process(context.Background(), reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}
@@ -222,7 +223,7 @@ func BenchmarkParseMemoryLoadedFile(b *testing.B) {
 	b.ResetTimer()
 	for b.Loop() {
 		_, _ = reader.Seek(0, io.SeekStart)
-		match, err := processor.Process(reader, writer)
+		match, err := processor.Process(context.Background(), reader, writer)
 		if err != nil {
 			b.Fatalf("error during matching: %v", err)
 		}

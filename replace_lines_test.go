@@ -2,6 +2,7 @@ package patt_test
 
 import (
 	"bytes"
+	"context"
 	"patt"
 	"strings"
 	"testing"
@@ -41,7 +42,7 @@ func TestReplaceMultiline(t *testing.T) {
 			output := &bytes.Buffer{}
 			processor := patt.NewLineProcessor(replacer, false)
 
-			matched, err := processor.Process(input, output)
+			matched, err := processor.Process(context.Background(), input, output)
 
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
@@ -100,13 +101,13 @@ func TestReplaceMatchingLines(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-						matcher := makeReplacer(t, pattern, template)
+			matcher := makeReplacer(t, pattern, template)
 			reader := strings.NewReader(tt.input)
 			var writer bytes.Buffer
 
 			processor := patt.NewLineProcessor(matcher, false)
 
-			matched, err := processor.Process(reader, &writer)
+			matched, err := processor.Process(context.Background(), reader, &writer)
 
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)

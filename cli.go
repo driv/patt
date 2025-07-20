@@ -1,12 +1,13 @@
 package patt
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 )
 
-func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
+func RunCLI(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) error {
 	params, err := ParseCLIParams(args[1:])
 	if err != nil {
 		return fmt.Errorf("bad parameters: %w", err)
@@ -21,13 +22,13 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 
 	var match bool
 	if len(params.InputFiles) == 0 {
-		match, err = processor.Process(io.NopCloser(stdin), stdout)
+		match, err = processor.Process(ctx, io.NopCloser(stdin), stdout)
 		if err != nil {
 			return fmt.Errorf("error matching lines: %w", err)
 		}
 	} else {
 		filesProcessor := NewFilesProcessor(params.InputFiles, processor, stdout)
-		match, err = filesProcessor.Process()
+		match, err = filesProcessor.Process(ctx)
 		if err != nil {
 			return fmt.Errorf("error matching files: %w", err)
 		}

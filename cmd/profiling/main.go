@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"patt"
@@ -23,7 +24,7 @@ func main() {
 	defer pprof.StopCPUProfile()
 
 	args := []string{"patt", "[<_> <_>] [error] <_>", "", "./testdata/Apache_500MB.log"}
-	err = patt.RunCLI(args, os.Stdin, os.Stdout)
+	err = patt.RunCLI(context.Background(), args, os.Stdin, os.Stdout)
 	if err != nil {
 		log.Fatal(err)
 	}

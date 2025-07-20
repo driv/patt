@@ -2,6 +2,7 @@ package patt
 
 import (
 	"bufio"
+	"context"
 	"io"
 )
 
@@ -17,13 +18,24 @@ func NewLineProcessor(replacer LineReplacer, keepNonMatching bool) *LineProcesso
 	}
 }
 
-func (p *LineProcessor) Process(r io.Reader, w io.Writer) (bool, error) {
+const contextCheckInterval = 1000
+
+func (p *LineProcessor) Process(ctx context.Context, r io.Reader, w io.Writer) (bool, error) {
 	scanner := bufio.NewScanner(r)
 	writer := bufio.NewWriter(w)
 	defer writer.Flush()
 
 	var match bool
+	lines := 0
 	for scanner.Scan() {
+		lines++
+		if lines%contextCheckInterval == 0 {
+			select {
+			case <-ctx.Done():
+				return false, ctx.Err()
+			default:
+			}
+		}
 		line := scanner.Bytes()
 		if p.replacer.Match(line) {
 			line = p.replacer.Replace(line)

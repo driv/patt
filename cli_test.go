@@ -2,6 +2,7 @@ package patt_test
 
 import (
 	"bytes"
+	"context"
 	"patt"
 	"testing"
 )
@@ -100,7 +101,7 @@ func TestRunCLI(t *testing.T) {
 			stdin := bytes.NewReader([]byte(tt.stdin))
 			stdout := &bytes.Buffer{}
 
-			err := patt.RunCLI(tt.args, stdin, stdout)
+			err := patt.RunCLI(context.Background(), tt.args, stdin, stdout)
 
 			if (err != nil) != tt.expectErr {
 				t.Errorf("expected error %v, got %v", tt.expectErr, err)

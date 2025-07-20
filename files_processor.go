@@ -1,6 +1,7 @@
 package patt
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -22,7 +23,7 @@ func NewFilesProcessor(files []string, processor *LineProcessor, writer io.Write
 	}
 }
 
-func (fp *FilesProcessor) Process() (bool, error) {
+func (fp *FilesProcessor) Process(ctx context.Context) (bool, error) {
 	result := false
 	for _, file := range fp.files {
 		inputFile, err := os.OpenFile(file, os.O_RDONLY, 0)
@@ -31,7 +32,7 @@ func (fp *FilesProcessor) Process() (bool, error) {
 		}
 		defer inputFile.Close()
 
-		matched, err := fp.processor.Process(inputFile, fp.writer)
+		matched, err := fp.processor.Process(ctx, inputFile, fp.writer)
 		if err != nil {
 			return false, fmt.Errorf("error processing file %s: %w", file, err)
 		}
