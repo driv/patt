@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 )
 
 func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
@@ -18,27 +17,17 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 		return fmt.Errorf("cannot parse template: %w", err)
 	}
 
+	processor := NewLineProcessor(replacer, params.Keep)
+
 	var match bool
 	if len(params.InputFiles) == 0 {
-		processor := NewLineProcessor(io.NopCloser(stdin), stdout, replacer, params.Keep)
-		match, err = processor.Process()
-		if err != nil {
-			return fmt.Errorf("error matching lines: %w", err)
-		}
-	} else if len(params.InputFiles) == 1 {
-		inputFile, err := os.OpenFile(params.InputFiles[0], os.O_RDONLY, 0)
-		if err != nil {
-			return fmt.Errorf("failed to read file %s: %w", params.InputFiles[0], err)
-		}
-		defer inputFile.Close()
-		processor := NewLineProcessor(inputFile, stdout, replacer, params.Keep)
-		match, err = processor.Process()
+		match, err = processor.Process(io.NopCloser(stdin), stdout)
 		if err != nil {
 			return fmt.Errorf("error matching lines: %w", err)
 		}
 	} else {
-		processor := NewFilesProcessor(params.InputFiles, replacer, stdout, params.Keep)
-		match, err = processor.Process()
+		filesProcessor := NewFilesProcessor(params.InputFiles, processor, stdout)
+		match, err = filesProcessor.Process()
 		if err != nil {
 			return fmt.Errorf("error matching files: %w", err)
 		}
