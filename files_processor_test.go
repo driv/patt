@@ -48,7 +48,7 @@ func TestFilesProcessor_Process_SingleFile(t *testing.T) {
 	replacer := &mockReplacer{toReplace: "world", replaceWith: "Go"}
 	
 	// Use a real LineProcessor
-	lineProcessor := NewLineProcessor(replacer, false)
+	lineProcessor := NewLineProcessor(replacer, true)
 
 	fp := NewFilesProcessor([]string{file.Name()}, lineProcessor, &buf)
 

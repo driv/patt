@@ -6,13 +6,17 @@ import (
 	"io"
 )
 
-type LineProcessor struct {
+type LineProcessor interface {
+	Process(ctx context.Context, r io.Reader, w io.Writer) (bool, error)
+}
+
+type lineProcessor struct {
 	keepNonMatching bool
 	replacer        LineReplacer
 }
 
-func NewLineProcessor(replacer LineReplacer, keepNonMatching bool) *LineProcessor {
-	return &LineProcessor{
+func NewLineProcessor(replacer LineReplacer, keepNonMatching bool) LineProcessor {
+	return &lineProcessor{
 		keepNonMatching: keepNonMatching,
 		replacer:        replacer,
 	}
@@ -20,7 +24,7 @@ func NewLineProcessor(replacer LineReplacer, keepNonMatching bool) *LineProcesso
 
 const contextCheckInterval = 1000
 
-func (p *LineProcessor) Process(ctx context.Context, r io.Reader, w io.Writer) (bool, error) {
+func (p *lineProcessor) Process(ctx context.Context, r io.Reader, w io.Writer) (bool, error) {
 	scanner := bufio.NewScanner(r)
 	writer := bufio.NewWriter(w)
 	defer writer.Flush()

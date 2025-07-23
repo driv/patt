@@ -10,12 +10,12 @@ import (
 // FilesProcessor processes multiple files in parallel and writes the output sequentially.
 type FilesProcessor struct {
 	files     []string
-	processor *LineProcessor
+	processor LineProcessor
 	writer    io.Writer
 }
 
 // NewFilesProcessor creates a new FilesProcessor.
-func NewFilesProcessor(files []string, processor *LineProcessor, writer io.Writer) *FilesProcessor {
+func NewFilesProcessor(files []string, processor LineProcessor, writer io.Writer) *FilesProcessor {
 	return &FilesProcessor{
 		files:     files,
 		processor: processor,
