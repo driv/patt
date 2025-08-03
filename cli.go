@@ -27,7 +27,7 @@ func RunCLI(ctx context.Context, args []string, stdin io.Reader, stdout io.Write
 			return fmt.Errorf("error matching lines: %w", err)
 		}
 	} else {
-		filesProcessor := NewFilesProcessor(params.InputFiles, processor, stdout)
+		filesProcessor := NewFilesProcessor(params.InputFiles, processor, stdout, &DefaultFileOpener{})
 		match, err = filesProcessor.Process(ctx)
 		if err != nil {
 			return fmt.Errorf("error matching files: %w", err)
