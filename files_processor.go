@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync"
 )
 
 // FileOpener defines the interface for opening files.
@@ -39,18 +38,22 @@ func NewFilesProcessor(files []string, processor LineProcessor, writer io.Writer
 }
 
 type blockingWriter struct {
-	startWriting      *sync.Mutex
-	doneWriting    *sync.Mutex
-	writer  io.Writer
-	writing bool
+	writer  *io.PipeWriter
+	reader  io.Reader
+	written bool
+	closed  bool
 }
 
 func (bw *blockingWriter) Write(p []byte) (n int, err error) {
-	if !bw.writing {
-		bw.startWriting.Lock()
-		bw.writing = true
+	if !bw.written {
+		bw.written = true
 	}
 	return bw.writer.Write(p)
+}
+
+func (bw *blockingWriter) Close() error {
+	bw.closed = true
+	return bw.writer.Close()
 }
 
 type processResult struct {
@@ -60,27 +63,24 @@ type processResult struct {
 
 func (fp *FilesProcessor) Process(ctx context.Context) (bool, error) {
 	resultsChan := make(chan processResult, 10)
-	mutexChan := make(chan *blockingWriter, 10)
+	outputsChan := make(chan *blockingWriter, 10)
+	// nextOutput := make(chan *blockingWriter)
 
 	go func() {
 		for _, file := range fp.files {
-			blockedOutput := newBlockedOutput(fp)
-			mutexChan <- blockedOutput
+			blockedOutput := newBlockedOutput()
+			outputsChan <- blockedOutput
 			go func(file string) {
-				matched, err := fp.processFile(ctx, file, blockedOutput)
-				resultsChan <- processResult{
-					matched: matched,
-					err:     err,
-				}
-				blockedOutput.doneWriting.Unlock()
+				defer blockedOutput.Close()
+				resultsChan <- fp.processFile(ctx, file, blockedOutput)
 			}(file)
 		}
-		close(mutexChan)
+		close(outputsChan)
 	}()
 	finalResultsChan := make(chan processResult, 1)
 	go func() {
 		var firstErr error
-		var anyMatched bool = false
+		var anyMatched bool
 		for result := range resultsChan {
 			if firstErr == nil {
 				firstErr = result.err
@@ -93,9 +93,11 @@ func (fp *FilesProcessor) Process(ctx context.Context) (bool, error) {
 		}
 	}()
 
-	for bo := range mutexChan {
-		bo.startWriting.Unlock()
-		bo.doneWriting.Lock()
+	for bo := range outputsChan {
+		if !bo.written && bo.closed {
+			continue // skip if nothing was written and the writer is closed
+		}
+		io.Copy(fp.writer, bo.reader)
 	}
 	close(resultsChan)
 	finalResult := <-finalResultsChan
@@ -103,23 +105,30 @@ func (fp *FilesProcessor) Process(ctx context.Context) (bool, error) {
 	return finalResult.matched, finalResult.err
 }
 
-func (fp *FilesProcessor) processFile(ctx context.Context, file string, blockedOutput *blockingWriter) (bool, error) {
+func (fp *FilesProcessor) processFile(ctx context.Context, file string, blockedOutput *blockingWriter) (result processResult) {
 	input, err := fp.fileOpener.Open(file)
 	if err != nil {
-		return false, fmt.Errorf("failed to read file %s: %w", file, err)
+		return processResult{
+			err: fmt.Errorf("failed to read file %s: %w", file, err),
+		}
 	}
 	defer input.Close()
 
 	matched, err := fp.processor.Process(ctx, input, blockedOutput)
 	if err != nil {
-		return false, fmt.Errorf("error processing file %s: %w", file, err)
+		return processResult{
+			matched: matched,
+			err:     fmt.Errorf("error processing file %s: %w", file, err),
+		}
 	}
-	return matched, nil
+	return processResult{matched: matched}
 }
 
-func newBlockedOutput(fp *FilesProcessor) *blockingWriter {
-	blockingOutput := &blockingWriter{writer: fp.writer, startWriting: &sync.Mutex{}, doneWriting: &sync.Mutex{}}
-	blockingOutput.startWriting.Lock()
-	blockingOutput.doneWriting.Lock()
+func newBlockedOutput() *blockingWriter {
+	pr, pw := io.Pipe()
+	blockingOutput := &blockingWriter{
+		writer: pw,
+		reader: pr,
+	}
 	return blockingOutput
 }

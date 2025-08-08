@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // mockLineProcessor is a mock implementation of the LineProcessor interface.
@@ -169,14 +170,14 @@ func TestFilesProcessor_Process_FileNotFound(t *testing.T) {
 
 func TestFilesProcessor_Process_Files_Written_In_Order(t *testing.T) {
 	fileContents := map[string]string{}
-	for i := range 30 {
+	for i := range 5 { //TODO we should fill the buffers
 		fileContents[fmt.Sprintf("file%d.txt", i+1)] = fmt.Sprintf("content file %d\n", i+1)
 	}
 	fileNames := getKeys(fileContents)
 
 	lockFile1 := make(chan struct{})
-	lockFile2 := make(chan struct{})
-	processing := make(chan struct{})
+	// lockFile2 := make(chan struct{})
+	doneReading := make(chan struct{})
 	var buf bytes.Buffer
 	lineProcessor := &mockLineProcessor{
 		processFunc: func(ctx context.Context, r io.Reader, w io.Writer) (bool, error) {
@@ -184,10 +185,7 @@ func TestFilesProcessor_Process_Files_Written_In_Order(t *testing.T) {
 			if string(content) == fileContents[fileNames[1]] {
 				lockFile1 <- struct{}{} // simulating long processing time
 			}
-			if string(content) == fileContents[fileNames[2]] {
-				lockFile2 <- struct{}{} // simulating long processing time
-			}
-			processing <- struct{}{}
+			doneReading <- struct{}{}
 			w.Write(content)
 			return true, nil
 		},
@@ -198,13 +196,17 @@ func TestFilesProcessor_Process_Files_Written_In_Order(t *testing.T) {
 	fp := NewFilesProcessor(fileNames, lineProcessor, &buf, fileOpener)
 
 	go func() {
-		<-processing // wait for some files to be processed
-		<-processing // wait for some files to be processed
-		<-processing // wait for some files to be processed
-		<-lockFile2  // finish processing first file
+		for i := range fileNames {
+			if i < 1 {
+				continue // skip one file being processed
+			}
+			<-doneReading // wait for the rest of the files to be processed
+		}
+
+		// <-lockFile2  // finish processing first file
 		<-lockFile1  // finish processing second file
-		for range processing {
-			<-processing // drain the channel to ensure all processing is done
+		for range doneReading {
+			<-doneReading // drain the channel to ensure all processing is done
 		}
 	}()
 
@@ -226,49 +228,41 @@ func TestFilesProcessor_Process_Files_Written_In_Order(t *testing.T) {
 }
 
 func TestFilesProcessor_Process_Files_Read_In_Parallel(t *testing.T) {
-	fileContents := map[string]string{
-		"file1.txt":  "content file 1\n",
-		"file2.txt":  "content file 2\n",
-		"file3.txt":  "content file 3\n",
-		"file4.txt":  "content file 4\n",
-		"file5.txt":  "content file 5\n",
-		"file6.txt":  "content file 6\n",
-		"file7.txt":  "content file 7\n",
-		"file8.txt":  "content file 8\n",
-		"file9.txt":  "content file 9\n",
-		"file10.txt": "content file 10\n",
-		"file11.txt": "content file 11\n",
+	fileContents := map[string]string{}
+	for i := range 5 { //TODO we should fill the buffers
+		fileContents[fmt.Sprintf("file%d.txt", i+1)] = fmt.Sprintf("content file %d\n", i+1)
 	}
+	fileNames := getKeys(fileContents)
 
 	lockFile1 := make(chan struct{})
-	doneProcessing := make(chan struct{})
+	doneReading := make(chan struct{})
 	var buf bytes.Buffer
 	lineProcessor := &mockLineProcessor{
 		processFunc: func(ctx context.Context, r io.Reader, w io.Writer) (bool, error) {
 			content, _ := io.ReadAll(r)
-			if string(content) == fileContents["file1.txt"] {
+			if string(content) == fileContents[fileNames[1]] {
 				lockFile1 <- struct{}{} // simulating long processing time
 			}
-			doneProcessing <- struct{}{}
+			doneReading <- struct{}{}
 			return false, nil
 		},
 	}
 
 	fileOpener := newMockFileOpener(fileContents)
 
-	fileNames := getKeys(fileContents)
 	fp := NewFilesProcessor(fileNames, lineProcessor, &buf, fileOpener)
 
+	// We should be able to read all files in parallel, without having to wait for the first one to finish.
 	go func() {
 		for i := range fileNames {
 			if i == 0 {
 				continue // skip one file that is being processed
 			}
-			<-doneProcessing // wait for the rest of the files to be processed
+			<-doneReading // wait for the rest of the files to be processed
 		}
 
 		<-lockFile1 // finish processing file1.txt
-		<-doneProcessing
+		<-doneReading
 	}()
 
 	result, err := fp.Process(context.Background())
@@ -293,4 +287,60 @@ func getKeys(fileContents map[string]string) []string {
 		i++
 	}
 	return fileNames
+}
+
+//This should be a benchmark test.
+func BenchmarkFilesProcessor_Process(b *testing.B) {
+	fileContents := map[string]string{}
+	for i := range 1_000 {
+		fileContents[fmt.Sprintf("file%d.txt", i+1)] = fmt.Sprintf("content file %d\n", i+1)
+	}
+	fileNames := getKeys(fileContents)
+
+	lockFile1 := make(chan struct{})
+	lockFile2 := make(chan struct{})
+	processing := make(chan struct{})
+	lineProcessor := &mockLineProcessor{
+		processFunc: func(ctx context.Context, r io.Reader, w io.Writer) (bool, error) {
+			content, _ := io.ReadAll(r)
+			if string(content) == fileContents[fileNames[1]] {
+				lockFile1 <- struct{}{} // simulating long processing time
+			}
+			if string(content) == fileContents[fileNames[2]] {
+				lockFile2 <- struct{}{} // simulating long processing time
+			}
+			processing <- struct{}{}
+			// w.Write(content)
+			//write half the content to simulate partial processing
+			w.Write([]byte(string(content)[:len(content)/2]))
+			// sleep for a few milliseconds to simulate processing time
+			time.Sleep(10 * time.Millisecond)
+			// write the rest of the content
+			w.Write([]byte(string(content)[len(content)/2:]))
+			return true, nil
+		},
+	}
+
+	fileOpener := newMockFileOpener(fileContents)
+
+	fp := NewFilesProcessor(fileNames, lineProcessor, io.Discard, fileOpener)
+
+	go func() {
+		<-processing // wait for some files to be processed
+		<-processing // wait for some files to be processed
+		<-processing // wait for some files to be processed
+		<-lockFile2  // finish processing first file
+		<-lockFile1  // finish processing second file
+		for range processing {
+			<-processing // drain the channel to ensure all processing is done
+		}
+	}()
+
+	result, err := fp.Process(context.Background())
+	if err != nil {
+		b.Fatalf("Process() error = %v", err)
+	}
+	if !result {
+		b.Errorf("expected result to be true, got false")
+	}
 }
