@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
 	"patt"
 )
 
 func main() {
-	exitIfErr(patt.RunCLI(os.Args, os.Stdin, os.Stdout))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer stop()
+	exitIfErr(patt.RunCLI(ctx, os.Args, os.Stdin, os.Stdout))
 }
 
 func exitIfErr(err error) {

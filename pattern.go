@@ -40,7 +40,7 @@ type matchFilter struct {
 	*PatternMatcher
 }
 
-func (mf matchFilter) Replace(line []byte) ([]byte) {
+func (mf matchFilter) Replace(line []byte) []byte {
 	return line
 }
 
@@ -86,7 +86,7 @@ func capturesPositions(sourceNames []string, replaceNames []string, literals [][
 
 type LineReplacer interface {
 	LinesMatcher
-	Replace(b []byte) ([]byte)
+	Replace(b []byte) []byte
 }
 type Replacer struct {
 	*PatternMatcher
@@ -94,7 +94,7 @@ type Replacer struct {
 	positions []int
 }
 
-func (r *Replacer) Replace(b []byte) ([]byte) {
+func (r *Replacer) Replace(b []byte) []byte {
 	matches := r.filter.Matches(b)
 	var result []byte
 	for i, l := range r.literals {
@@ -124,7 +124,7 @@ func NewMultiReplacer(patterns []string, template string) (*MultiReplacer, error
 }
 
 // MultiReplacer matches multiple patterns and applies a single replacement template.
-// 
+//
 // Usage Note:
 // The Replace method requires that Match(line) has previously returned true for the same line.
 // If Replace is called without a prior successful Match, it will fail.
@@ -145,7 +145,6 @@ func (m *MultiReplacer) Match(line []byte) bool {
 	return false
 }
 
-
-func (m *MultiReplacer) Replace(line []byte) ([]byte) {
+func (m *MultiReplacer) Replace(line []byte) []byte {
 	return m.replacers[m.lastMatchedIx].Replace(line)
 }

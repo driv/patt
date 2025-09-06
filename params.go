@@ -2,69 +2,59 @@ package patt
 
 import (
 	"fmt"
-
-	"github.com/alecthomas/kingpin/v2"
+	"github.com/spf13/cobra"
 )
 
 // CLIParams holds the command-line parameters.
 type CLIParams struct {
 	SearchPatterns  []string
 	ReplaceTemplate string
-	InputFile       string
+	InputFiles      []string
 	Keep            bool
 }
 
-type patterns []string
+// ParseCLIParams parses flags + positional args
+//
+//	patt [flags] search_pattern [[more_search ...] replace_pattern]
+//	     [-- file1 [file2 ...]]
+//
+// Flags:   -k / --keep  (bool)
+func ParseCLIParams(argsWithFlags []string) (CLIParams, error) {
+	var out CLIParams
 
-func (p *patterns) String() string {
-	return ""
-}
+	cmd := &cobra.Command{
+		Use:  "patt [flags] search_pattern [[search_pattern ...] replace_template] [-- input_files...]",
+		Args: cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			doubleDashPos := cmd.ArgsLenAtDash()
+			var patterns []string
+			if doubleDashPos == -1 {
+				patterns = args
+			} else {
+				patterns = args[:doubleDashPos]
+				out.InputFiles = args[doubleDashPos:]
+			}
 
-func (p *patterns) Set(value string) error {
-	*p = append(*p, value)
-	return nil
-}
-
-func (p *patterns) IsCumulative() bool {
-	return true
-}
-
-func ParseCLIParams(argsWithFlags []string) (*CLIParams, error) {
-	app := kingpin.New("patt", "Pattern-based log matcher and replacer")
-
-	keep := app.Flag("keep", "Print non-matching lines").Short('k').Bool()
-	inputFile := app.Flag("file", "Input file (optional)").Short('f').String()
-	patterns := &patterns{}
-	app.Arg(
-		"patterns",
-		"Provide one or more search patterns followed by an optional replacement pattern.\n"+
-			"Format:\n"+
-			"  patt search_pattern\n"+
-			"  patt search_pattern1 replace_pattern\n"+
-			"  patt search_pattern1 replace_pattern -f file.log\n"+
-			"  patt search_pattern1 replace_pattern replace_pattern2 -- file.log\n"+
-			"  patt search_pattern1 [[search_pattern2 ... search_patternN] replace_pattern] [-- file.log [file2.log ... filen.log]\n",
-	).SetValue(patterns)
-
-	_, err := app.Parse(argsWithFlags)
-	if err != nil {
-		return nil, err
-	}
-	posArgs := *patterns
-
-	result := CLIParams{
-		Keep:      *keep,
-		InputFile: *inputFile,
+			switch len(patterns) {
+			case 0:
+				return fmt.Errorf("at least one search pattern is required")
+			case 1:
+				out.SearchPatterns = patterns
+			default:
+				out.SearchPatterns = patterns[:len(patterns)-1]
+				out.ReplaceTemplate = patterns[len(patterns)-1]
+			}
+			return nil
+		},
 	}
 
-	if len(posArgs) == 0 {
-		return nil, fmt.Errorf("at least one search pattern is required")
-	} else if len(posArgs) == 1 {
-		result.SearchPatterns = posArgs
-	} else if len(posArgs) > 1 {
-		result.SearchPatterns = posArgs[:1]
-		result.ReplaceTemplate = posArgs[len(posArgs)-1]
-	}
+	cmd.Flags().BoolVarP(&out.Keep, "keep", "k", false, "print non‑matching lines")
 
-	return &result, nil
+	if err := cmd.ParseFlags(argsWithFlags); err != nil {
+		return out, err
+	}
+	if err := cmd.RunE(cmd, cmd.Flags().Args()); err != nil {
+		return out, err
+	}
+	return out, nil
 }
