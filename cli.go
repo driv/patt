@@ -1,13 +1,16 @@
 package patt
 
 import (
+	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"slices"
 )
 
-func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
+func RunCLI(ctx context.Context, args []string, stdin io.Reader, stdout io.Writer) error {
 	params, err := ParseCLIParams(args[1:])
 	if err != nil {
 		return fmt.Errorf("bad parameters: %w", err)
@@ -17,23 +20,39 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("cannot parse template: %w", err)
 	}
-	var input io.Reader
-	if params.InputFile == "" {
-		input = stdin
-	} else {
-		inputFile, err := os.OpenFile(params.InputFile, os.O_RDONLY, 0)
+
+	processor := NewLineProcessor(replacer, params.Keep)
+
+	var match bool
+	if len(params.InputFiles) == 0 {
+		match, err = processor.Process(ctx, io.NopCloser(stdin), stdout)
 		if err != nil {
-			return fmt.Errorf("error opening input file: %w", err)
+			return fmt.Errorf("error matching lines: %w", err)
 		}
-		defer inputFile.Close()
-		input = inputFile
-	}
+	} else if len(params.InputFiles) == 1 {
+		fileOpener := &BufferedFileOpener{}
+		rc, err := fileOpener.Open(params.InputFiles[0])
+		if err != nil {
+			return fmt.Errorf("cannot open input file: %w", err)
+		}
+		defer rc.Close()
 
-	processor := NewLineProcessor(input, stdout, params.Keep)
-
-	match, err := processor.ProcessLines(replacer)
-	if err != nil {
-		return fmt.Errorf("error matching lines: %w", err)
+		match, err = processor.Process(ctx, rc, stdout)
+		if err != nil {
+			return fmt.Errorf("error matching file: %w", err)
+		}
+	} else {
+		filesProcessor := NewFilesProcessor(
+			slices.Values(params.InputFiles),
+			processor,
+			stdout,
+			&BufferedFileOpener{},
+			4,
+		)
+		match, err = filesProcessor.Process(ctx)
+		if err != nil {
+			return fmt.Errorf("error matching files: %w", err)
+		}
 	}
 	if !match {
 		return fmt.Errorf("no match")
@@ -42,7 +61,7 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer) error {
 	return nil
 }
 
-func replacer(params *CLIParams) (LineReplacer, error) {
+func replacer(params CLIParams) (LineReplacer, error) {
 	switch {
 	case params.ReplaceTemplate == "":
 		return NewFilter(params.SearchPatterns[0])
@@ -52,4 +71,28 @@ func replacer(params *CLIParams) (LineReplacer, error) {
 		return NewMultiReplacer(params.SearchPatterns, params.ReplaceTemplate)
 	}
 	return nil, errors.New("invalid parameters, cannot initialize replacer")
+}
+
+type BufferedFileOpener struct {
+	BufSize int
+}
+
+func (ffo *BufferedFileOpener) Open(name string) (io.ReadCloser, error) {
+	f, err := os.OpenFile(name, os.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	if ffo.BufSize <= 0 {
+		ffo.BufSize = 4 * 1024 * 1024 // default 4 MB
+	}
+	br := bufio.NewReaderSize(f, ffo.BufSize)
+
+	return struct {
+		io.Reader
+		io.Closer
+	}{
+		Reader: br,
+		Closer: f,
+	}, nil
 }

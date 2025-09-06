@@ -13,11 +13,11 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 	}{
 		{
 			name: "replace with input file",
-			args: []string{"pattern", "replacement", "-f", "input.txt"},
+			args: []string{"pattern", "replacement", "--", "input.txt"},
 			want: CLIParams{
 				SearchPatterns:  []string{"pattern"},
 				ReplaceTemplate: "replacement",
-				InputFile:       "input.txt",
+				InputFiles:      []string{"input.txt"},
 			},
 		},
 		{
@@ -37,20 +37,29 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 		},
 		{
 			name: "search only with input file",
-			args: []string{"pattern", "-f", "input.txt"},
+			args: []string{"pattern", "--", "input.txt"},
 			want: CLIParams{
 				SearchPatterns:  []string{"pattern"},
 				ReplaceTemplate: "",
-				InputFile:       "input.txt",
+				InputFiles:      []string{"input.txt"},
+			},
+		},
+		{
+			name: "search only with 2 input files",
+			args: []string{"pattern", "--", "input.txt", "input2.txt"},
+			want: CLIParams{
+				SearchPatterns:  []string{"pattern"},
+				ReplaceTemplate: "",
+				InputFiles:      []string{"input.txt", "input2.txt"},
 			},
 		},
 		{
 			name: "replace with input file and keep",
-			args: []string{"pattern", "replacement", "-f", "input.txt", "-k"},
+			args: []string{"pattern", "replacement", "-k", "--", "input.txt"},
 			want: CLIParams{
 				SearchPatterns:  []string{"pattern"},
 				ReplaceTemplate: "replacement",
-				InputFile:       "input.txt",
+				InputFiles:      []string{"input.txt"},
 				Keep:            true,
 			},
 		},
@@ -62,6 +71,14 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 				Keep:           true,
 			},
 		},
+		{
+			name: "multiple search patterns",
+			args: []string{"pattern1", "pattern2", "template"},
+			want: CLIParams{
+				SearchPatterns:  []string{"pattern1", "pattern2"},
+				ReplaceTemplate: "template",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -71,7 +88,7 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 				t.Errorf("ParseCLIParams() error = %v, want no error", err)
 				return
 			}
-			if got != nil && !reflect.DeepEqual(*got, tt.want) {
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ParseCLIParams() = %v, want %v", got, tt.want)
 			}
 		})
@@ -86,6 +103,10 @@ func TestParseCLIParams_WithErrors(t *testing.T) {
 		{
 			name: "missing pattern",
 			args: []string{},
+		},
+		{
+			name: "unknown flag",
+			args: []string{"pattern", "replacement", "--unknown-flag"},
 		},
 	}
 
