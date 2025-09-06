@@ -2,7 +2,7 @@ name: CI and Release
 
 on:
   push:
-    branches: 
+    branches:
       - '**'
     tags:
       - 'v*'
@@ -24,7 +24,10 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.21'
+        go-version: '1.24'
+
+    - name: Tidy modules
+      run: go mod tidy
 
     - name: Run tests
       run: go test -v ./...
@@ -46,7 +49,10 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.21'
+        go-version: '1.24'
+
+    - name: Tidy modules
+      run: go mod tidy
 
     - name: Run tests
       run: go test -v ./...
@@ -82,7 +88,7 @@ jobs:
         sha256sum * > checksums.txt
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           dist/*
@@ -91,4 +97,3 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
