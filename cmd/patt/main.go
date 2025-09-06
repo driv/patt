@@ -7,6 +7,8 @@ import (
 	"patt"
 )
 
+var version = "dev"
+
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer stop()
