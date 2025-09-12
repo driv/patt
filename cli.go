@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/pprof"
 	"slices"
 )
 
@@ -14,6 +15,18 @@ func RunCLI(ctx context.Context, args []string, stdin io.Reader, stdout io.Write
 	params, err := ParseCLIParams(args[1:])
 	if err != nil {
 		return fmt.Errorf("bad parameters: %w", err)
+	}
+
+	if params.CPUProfile != "" {
+		f, err := os.Create(params.CPUProfile)
+		if err != nil {
+			return fmt.Errorf("could not create CPU profile: %w", err)
+		}
+		defer f.Close()
+		if err := pprof.StartCPUProfile(f); err != nil {
+			return fmt.Errorf("could not start CPU profile: %w", err)
+		}
+		defer pprof.StopCPUProfile()
 	}
 
 	replacer, err := replacer(params)

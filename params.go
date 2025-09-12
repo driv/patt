@@ -11,9 +11,11 @@ type CLIParams struct {
 	ReplaceTemplate string
 	InputFiles      []string
 	Keep            bool
+	CPUProfile      string
 }
 
 // ParseCLIParams parses flags + positional args
+//
 //
 //	patt [flags] search_pattern [[more_search ...] replace_pattern]
 //	     [-- file1 [file2 ...]]
@@ -49,6 +51,10 @@ func ParseCLIParams(argsWithFlags []string) (CLIParams, error) {
 	}
 
 	cmd.Flags().BoolVarP(&out.Keep, "keep", "k", false, "print non‑matching lines")
+	cmd.Flags().StringVar(&out.CPUProfile, "cpu-profile", "", "write cpu profile to file")
+	if err := cmd.Flags().MarkHidden("cpu-profile"); err != nil {
+		return out, err
+	}
 
 	if err := cmd.ParseFlags(argsWithFlags); err != nil {
 		return out, err
