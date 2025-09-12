@@ -12,8 +12,9 @@ var (
 )
 
 type Matcher struct {
-	e     expr
-	names []string
+	e           expr
+	names       []string
+	hardLiteral []byte
 }
 
 func New(in string) (*Matcher, error) {
@@ -24,9 +25,18 @@ func New(in string) (*Matcher, error) {
 	if err := e.validate(); err != nil {
 		return nil, err
 	}
+	var hardLiteral []byte
+	for _, n := range e {
+		if l, ok := n.(literals); ok {
+			if len(l) > len(hardLiteral) {
+				hardLiteral = l
+			}
+		}
+	}
 	return &Matcher{
-		e:     e,
-		names: e.captures(),
+		e:           e,
+		names:       e.captures(),
+		hardLiteral: hardLiteral,
 	}, nil
 }
 
@@ -41,7 +51,15 @@ func ParseLineFilter(in []byte) (*Matcher, error) {
 	if err = e.validateNoConsecutiveCaptures(); err != nil {
 		return nil, err
 	}
-	return &Matcher{e: e}, nil
+	var hardLiteral []byte
+	for _, n := range e {
+		if l, ok := n.(literals); ok {
+			if len(l) > len(hardLiteral) {
+				hardLiteral = l
+			}
+		}
+	}
+	return &Matcher{e: e, hardLiteral: hardLiteral}, nil
 }
 
 func ParseLiterals(in string) ([][]byte, error) {
@@ -137,6 +155,11 @@ func (m *Matcher) Names() []string {
 }
 
 func (m *Matcher) Test(in []byte) bool {
+	if m.hardLiteral != nil {
+		if bytes.Index(in, m.hardLiteral) == -1 {
+			return false
+		}
+	}
 	if len(in) == 0 || len(m.e) == 0 {
 		// An empty line can only match an empty pattern.
 		return len(in) == 0 && len(m.e) == 0
