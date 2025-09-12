@@ -1,6 +1,7 @@
 package patt
 
 import (
+	"bytes"
 	"fmt"
 
 	"patt/pattern"
@@ -19,10 +20,16 @@ type LinesMatcher interface {
 }
 
 type PatternMatcher struct {
-	filter pattern.Matcher
+	filter      pattern.Matcher
+	hardLiteral []byte
 }
 
 func (m PatternMatcher) Match(b []byte) bool {
+	if m.hardLiteral != nil {
+		if bytes.Index(b, m.hardLiteral) == -1 {
+			return false
+		}
+	}
 	return m.filter.Test(b)
 }
 
@@ -31,7 +38,18 @@ func NewFilter(stringPattern string) (LineReplacer, error) {
 	if err != nil {
 		return nil, err
 	}
-	matcher := PatternMatcher{filter: *filter}
+	literals, err := pattern.ParseLiterals(stringPattern)
+	if err != nil {
+		return nil, err
+	}
+	var hardLiteral []byte
+	for _, l := range literals {
+		if len(l) > len(hardLiteral) {
+			hardLiteral = l
+		}
+	}
+
+	matcher := PatternMatcher{filter: *filter, hardLiteral: hardLiteral}
 	replacer := matchFilter{PatternMatcher: &matcher}
 	return replacer, nil
 }
@@ -58,8 +76,18 @@ func NewReplacer(stringPattern, stringReplaceTemplate string) (*Replacer, error)
 	if err != nil {
 		return nil, err
 	}
+	lits, err := pattern.ParseLiterals(stringPattern)
+	if err != nil {
+		return nil, err
+	}
+	var hardLiteral []byte
+	for _, l := range lits {
+		if len(l) > len(hardLiteral) {
+			hardLiteral = l
+		}
+	}
 	return &Replacer{
-		PatternMatcher: &PatternMatcher{filter: *filter},
+		PatternMatcher: &PatternMatcher{filter: *filter, hardLiteral: hardLiteral},
 		literals:       literals,
 		positions:      positions,
 	}, nil
