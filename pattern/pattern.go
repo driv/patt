@@ -14,7 +14,7 @@ var (
 type Matcher struct {
 	e           expr
 	names       []string
-	hardLiteral []byte
+	longestLiteral []byte
 }
 
 func New(in string) (*Matcher, error) {
@@ -25,18 +25,18 @@ func New(in string) (*Matcher, error) {
 	if err := e.validate(); err != nil {
 		return nil, err
 	}
-	var hardLiteral []byte
+	var longestLiteral []byte
 	for _, n := range e {
 		if l, ok := n.(literals); ok {
-			if len(l) > len(hardLiteral) {
-				hardLiteral = l
+			if len(l) > len(longestLiteral) {
+				longestLiteral = l
 			}
 		}
 	}
 	return &Matcher{
 		e:           e,
 		names:       e.captures(),
-		hardLiteral: hardLiteral,
+		longestLiteral: longestLiteral,
 	}, nil
 }
 
@@ -51,15 +51,15 @@ func ParseLineFilter(in []byte) (*Matcher, error) {
 	if err = e.validateNoConsecutiveCaptures(); err != nil {
 		return nil, err
 	}
-	var hardLiteral []byte
+	var longestLiteral []byte
 	for _, n := range e {
 		if l, ok := n.(literals); ok {
-			if len(l) > len(hardLiteral) {
-				hardLiteral = l
+			if len(l) > len(longestLiteral) {
+				longestLiteral = l
 			}
 		}
 	}
-	return &Matcher{e: e, hardLiteral: hardLiteral}, nil
+	return &Matcher{e: e, longestLiteral: longestLiteral}, nil
 }
 
 func ParseLiterals(in string) ([][]byte, error) {
@@ -155,8 +155,8 @@ func (m *Matcher) Names() []string {
 }
 
 func (m *Matcher) Test(in []byte) bool {
-	if len(m.hardLiteral) > 0 {
-		if !bytes.Contains(in, m.hardLiteral) {
+	if len(m.longestLiteral) > 0 {
+		if !bytes.Contains(in, m.longestLiteral) {
 			return false
 		}
 	}
