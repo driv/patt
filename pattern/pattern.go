@@ -155,14 +155,10 @@ func (m *Matcher) Names() []string {
 }
 
 func (m *Matcher) Test(in []byte) bool {
-	if m.hardLiteral != nil {
-		if bytes.Index(in, m.hardLiteral) == -1 {
+	if len(m.hardLiteral) > 0 {
+		if !bytes.Contains(in, m.hardLiteral) {
 			return false
 		}
-	}
-	if len(in) == 0 || len(m.e) == 0 {
-		// An empty line can only match an empty pattern.
-		return len(in) == 0 && len(m.e) == 0
 	}
 	var off int
 	for i := range m.e {
@@ -180,6 +176,10 @@ func (m *Matcher) Test(in []byte) bool {
 			return false
 		}
 		off += j + len(lit)
+	}
+	if len(in) == 0 || len(m.e) == 0 {
+		// An empty line can only match an empty pattern.
+		return len(in) == 0 && len(m.e) == 0
 	}
 	// If we end up on a literal, we only consider the test successful if
 	// the remaining input is empty. Otherwise, if we end up on a capture,
