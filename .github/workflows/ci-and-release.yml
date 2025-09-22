@@ -153,13 +153,10 @@ jobs:
         sha256sum * > checksums.txt
 
     - name: Delete old nightly release
-      uses: dev-drpr/delete-tag-and-release@v0.2.1
-      with:
-        tag_name: nightly
-        delete_repo_tag: true
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      continue-on-error: true
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release delete nightly --cleanup-tag -y || true
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
