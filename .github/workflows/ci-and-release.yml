@@ -97,3 +97,75 @@ jobs:
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  nightly:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
+
+    - name: Tidy modules
+      run: go mod tidy
+
+    - name: Run tests
+      run: go test -v ./...
+
+    - name: Set up environment variables
+      run: |
+        echo "VERSION=nightly-$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+        echo "RELEASE_NOTES_FILE=release-notes.md" >> $GITHUB_ENV
+
+    - name: Generate release notes
+      run: |
+        echo "# Nightly Build" > $RELEASE_NOTES_FILE
+        echo "" >> $RELEASE_NOTES_FILE
+        echo "## Latest commit" >> $RELEASE_NOTES_FILE
+        git log --pretty=format:"- %s" -n 1 >> $RELEASE_NOTES_FILE
+
+    - name: Build binaries
+      run: |
+        # Create dist directory
+        mkdir -p dist
+        
+        # Build for multiple platforms
+        GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-linux-amd64 ./cmd/patt
+        GOOS=linux GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-linux-arm64 ./cmd/patt
+        GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-darwin-amd64 ./cmd/patt
+        GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-darwin-arm64 ./cmd/patt
+        GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-windows-amd64.exe ./cmd/patt
+        GOOS=windows GOARCH=arm64 go build -ldflags="-s -w -X main.version=${VERSION}" -o dist/patt-windows-arm64.exe ./cmd/patt
+
+    - name: Create checksums
+      run: |
+        cd dist
+        sha256sum * > checksums.txt
+
+    - name: Delete old nightly release
+      uses: dev-drpr/delete-tag-and-release@v0.2.1
+      with:
+        tag_name: nightly
+        delete_repo_tag: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      continue-on-error: true
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          dist/*
+        body_path: ${{ env.RELEASE_NOTES_FILE }}
+        name: Nightly Build
+        tag_name: nightly
+        draft: false
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
