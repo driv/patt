@@ -79,6 +79,16 @@ func TestParseCLIParams_NoErrors(t *testing.T) {
 				ReplaceTemplate: "template",
 			},
 		},
+	{
+			name: "cpu profile flag",
+			args: []string{"--cpu-profile=cpu.pprof", "pattern", "replacement", "--", "input.txt"},
+			want: CLIParams{
+				SearchPatterns:  []string{"pattern"},
+				ReplaceTemplate: "replacement",
+				InputFiles:      []string{"input.txt"},
+				CPUProfile:      "cpu.pprof",
+			},
+		},
 	}
 
 	for _, tt := range tests {

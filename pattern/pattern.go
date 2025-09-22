@@ -12,8 +12,9 @@ var (
 )
 
 type Matcher struct {
-	e     expr
-	names []string
+	e           expr
+	names       []string
+	longestLiteral []byte
 }
 
 func New(in string) (*Matcher, error) {
@@ -24,9 +25,18 @@ func New(in string) (*Matcher, error) {
 	if err := e.validate(); err != nil {
 		return nil, err
 	}
+	var longestLiteral []byte
+	for _, n := range e {
+		if l, ok := n.(literals); ok {
+			if len(l) > len(longestLiteral) {
+				longestLiteral = l
+			}
+		}
+	}
 	return &Matcher{
-		e:     e,
-		names: e.captures(),
+		e:           e,
+		names:       e.captures(),
+		longestLiteral: longestLiteral,
 	}, nil
 }
 
@@ -41,7 +51,15 @@ func ParseLineFilter(in []byte) (*Matcher, error) {
 	if err = e.validateNoConsecutiveCaptures(); err != nil {
 		return nil, err
 	}
-	return &Matcher{e: e}, nil
+	var longestLiteral []byte
+	for _, n := range e {
+		if l, ok := n.(literals); ok {
+			if len(l) > len(longestLiteral) {
+				longestLiteral = l
+			}
+		}
+	}
+	return &Matcher{e: e, longestLiteral: longestLiteral}, nil
 }
 
 func ParseLiterals(in string) ([][]byte, error) {
@@ -137,9 +155,10 @@ func (m *Matcher) Names() []string {
 }
 
 func (m *Matcher) Test(in []byte) bool {
-	if len(in) == 0 || len(m.e) == 0 {
-		// An empty line can only match an empty pattern.
-		return len(in) == 0 && len(m.e) == 0
+	if len(m.longestLiteral) > 0 {
+		if !bytes.Contains(in, m.longestLiteral) {
+			return false
+		}
 	}
 	var off int
 	for i := range m.e {
@@ -157,6 +176,10 @@ func (m *Matcher) Test(in []byte) bool {
 			return false
 		}
 		off += j + len(lit)
+	}
+	if len(in) == 0 || len(m.e) == 0 {
+		// An empty line can only match an empty pattern.
+		return len(in) == 0 && len(m.e) == 0
 	}
 	// If we end up on a literal, we only consider the test successful if
 	// the remaining input is empty. Otherwise, if we end up on a capture,
